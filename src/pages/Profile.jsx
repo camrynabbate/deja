@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import usePreferences from '@/hooks/usePreferences';
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Bookmark, Search, TrendingUp, LogOut, Trash2 } from 'lucide-react';
+import { Heart, Bookmark, Search, TrendingUp, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ export default function Profile() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const { preferences, tasteProfile, likedIds, savedIds } = usePreferences();
+  const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -126,14 +127,6 @@ export default function Profile() {
 
       {/* Account Actions */}
       <div className="pt-6 border-t border-border space-y-2">
-        <Button
-          variant="ghost"
-          className="text-muted-foreground hover:text-foreground"
-          onClick={() => base44.auth.logout()}
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
-        </Button>
         <div>
           <Button
             variant="ghost"
@@ -141,18 +134,18 @@ export default function Profile() {
             onClick={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete Account
+            Clear All Data
           </Button>
         </div>
       </div>
 
-      {/* Delete Account Dialog */}
+      {/* Delete Data Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl">Delete Account</DialogTitle>
+            <DialogTitle className="font-serif text-xl">Clear All Data</DialogTitle>
             <DialogDescription>
-              This is permanent and cannot be undone. All your preferences, saved items, styleboards, and search history will be deleted.
+              This will delete all your preferences, saved items, styleboards, and search history from this browser.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
@@ -176,22 +169,24 @@ export default function Profile() {
                 onClick={async () => {
                   setIsDeleting(true);
                   try {
-                    await base44.entities.UserPreference.filter({ created_by: user?.email }).then(async (prefs) => {
-                      for (const p of prefs) await base44.entities.UserPreference.delete(p.id);
-                    });
-                    await base44.entities.Styleboard.filter({ created_by: user?.email }).then(async (boards) => {
-                      for (const b of boards) await base44.entities.Styleboard.delete(b.id);
-                    });
-                    await base44.entities.DupeSearch.filter({ created_by: user?.email }).then(async (searches) => {
-                      for (const s of searches) await base44.entities.DupeSearch.delete(s.id);
-                    });
-                    base44.auth.logout();
+                    const prefs = await base44.entities.UserPreference.list('-created_date', 1000);
+                    for (const p of prefs) await base44.entities.UserPreference.delete(p.id);
+
+                    const boards = await base44.entities.Styleboard.list('-created_date', 1000);
+                    for (const b of boards) await base44.entities.Styleboard.delete(b.id);
+
+                    const dupes = await base44.entities.DupeSearch.list('-created_date', 1000);
+                    for (const s of dupes) await base44.entities.DupeSearch.delete(s.id);
+
+                    queryClient.invalidateQueries();
+                    setShowDeleteDialog(false);
+                    setDeleteConfirm('');
                   } finally {
                     setIsDeleting(false);
                   }
                 }}
               >
-                {isDeleting ? 'Deleting...' : 'Permanently Delete'}
+                {isDeleting ? 'Deleting...' : 'Clear Everything'}
               </Button>
             </div>
           </div>

@@ -15,63 +15,24 @@ export default function FindDupes() {
 
   const searchMutation = useMutation({
     mutationFn: async () => {
-      let imageUrl = null;
-      if (imageFile) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
-        imageUrl = file_url;
-      }
-
-      const prompt = `You are a fashion expert specializing in finding affordable dupes/alternatives for high-end clothing items.
-
-The user is looking for dupes of this item:
-Description: ${description}
-${imageUrl ? 'An image of the item has been provided.' : ''}
-
-Find 5 realistic, purchasable dupe alternatives that are more affordable. For each dupe, provide:
-- A realistic title and brand name
-- An estimated price (should be noticeably cheaper than the original)
-- A similarity score from 0.7 to 0.98
-- A brief description of why it's similar and any differences
-- Where it could be purchased (specific retailer name)
-- Do NOT include any URLs or links.
-
-Focus on real brands and realistic prices. Think of brands like Zara, H&M, Mango, ASOS, Uniqlo, COS, & Other Stories, Massimo Dutti, etc.`;
-
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        file_urls: imageUrl ? [imageUrl] : undefined,
-        model: 'gpt_5_mini',
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            dupes: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  title: { type: 'string' },
-                  brand: { type: 'string' },
-                  price: { type: 'number' },
-                  similarity_score: { type: 'number' },
-                  description: { type: 'string' },
-                  where_to_buy: { type: 'string' },
-
-                },
-              },
-            },
-          },
-        },
-      });
+      // Mock dupe results — replace with a real API call (e.g. Claude API) for production
+      const mockDupes = [
+        { title: 'Faux Leather Crossbody', brand: 'Zara', price: 35.99, similarity_score: 0.92, description: 'Similar silhouette and hardware detailing at a fraction of the price.', where_to_buy: 'Zara' },
+        { title: 'Quilted Shoulder Bag', brand: 'H&M', price: 24.99, similarity_score: 0.85, description: 'Quilted texture and chain strap give a luxury feel on a budget.', where_to_buy: 'H&M' },
+        { title: 'Mini Flap Bag', brand: 'Mango', price: 45.99, similarity_score: 0.88, description: 'Structured shape with gold-tone clasp, very close to the original.', where_to_buy: 'Mango' },
+        { title: 'Chain Detail Bag', brand: 'ASOS', price: 29.00, similarity_score: 0.80, description: 'Affordable option with similar proportions and chain accent.', where_to_buy: 'ASOS' },
+        { title: 'Compact Crossbody', brand: 'COS', price: 69.00, similarity_score: 0.90, description: 'Higher quality materials with clean minimalist design.', where_to_buy: 'COS' },
+      ];
 
       // Save the search
       await base44.entities.DupeSearch.create({
         original_description: description,
-        original_image_url: imageUrl || '',
-        results: response.dupes || [],
+        original_image_url: imagePreview || '',
+        results: mockDupes,
         status: 'completed',
       });
 
-      return response.dupes || [];
+      return mockDupes;
     },
     onSuccess: (data) => setResults(data),
   });
