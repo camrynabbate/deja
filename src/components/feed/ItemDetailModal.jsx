@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { BottomSheet, BottomSheetItem } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/button';
@@ -21,10 +22,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
     queryFn: () => base44.entities.Styleboard.list('-created_date', 50),
   });
 
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { user } = useAuth();
 
   const similarItems = useMemo(() => {
     if (!item || !allItems?.length) return [];

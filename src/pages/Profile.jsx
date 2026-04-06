@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import usePreferences from '@/hooks/usePreferences';
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Bookmark, Search, TrendingUp, Trash2 } from 'lucide-react';
+import { Heart, Bookmark, Search, TrendingUp, LogOut, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,12 +14,8 @@ export default function Profile() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const { preferences, tasteProfile, likedIds, savedIds } = usePreferences();
+  const { user, logout } = useAuth();
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
 
   const { data: searches = [] } = useQuery({
     queryKey: ['dupeSearches'],
@@ -127,6 +124,14 @@ export default function Profile() {
 
       {/* Account Actions */}
       <div className="pt-6 border-t border-border space-y-2">
+        <Button
+          variant="ghost"
+          className="text-muted-foreground hover:text-foreground"
+          onClick={logout}
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
+        </Button>
         <div>
           <Button
             variant="ghost"

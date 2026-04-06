@@ -1,23 +1,42 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const AuthContext = createContext();
 
-const LOCAL_USER = {
-  email: 'you@vera.local',
-  full_name: 'You',
-  role: 'admin',
-};
-
 export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          full_name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+          role: 'user',
+        });
+      } else {
+        setUser(null);
+      }
+      setIsLoadingAuth(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  const logout = async () => {
+    await signOut(auth);
+  };
+
   return (
     <AuthContext.Provider value={{
-      user: LOCAL_USER,
-      isAuthenticated: true,
-      isLoadingAuth: false,
+      user,
+      isAuthenticated: !!user,
+      isLoadingAuth,
       isLoadingPublicSettings: false,
       authError: null,
-      appPublicSettings: null,
-      logout: () => {},
+      logout,
       navigateToLogin: () => {},
       checkAppState: () => {},
     }}>

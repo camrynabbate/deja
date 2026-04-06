@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Save, Globe, Lock, Trash2, Loader2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
@@ -30,10 +31,7 @@ export default function StyleboardBuilder() {
     queryFn: () => base44.entities.ClothingItem.list('-created_date', 200),
   });
 
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { user } = useAuth();
 
   const [title, setTitle] = useState('');
   const [canvasItems, setCanvasItems] = useState([]);

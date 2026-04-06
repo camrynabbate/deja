@@ -5,8 +5,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from '@/components/layout/AppLayout.jsx';
+import Login from '@/pages/Login';
 
 const Feed = lazy(() => import('@/pages/Feed'));
 const FindDupes = lazy(() => import('@/pages/FindDupes'));
@@ -25,10 +25,9 @@ function PageLoader() {
 }
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, checkAppState } = useAuth();
+  const { isLoadingAuth, isAuthenticated } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -36,30 +35,10 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    } else {
-      // Unknown/network error — retry instead of showing blank screen
-      return (
-        <div className="fixed inset-0 flex flex-col items-center justify-center gap-4">
-          <p className="text-sm text-muted-foreground">Something went wrong loading the app.</p>
-          <button
-            onClick={checkAppState}
-            className="text-sm font-medium underline underline-offset-4 text-foreground"
-          >
-            Retry
-          </button>
-        </div>
-      );
-    }
+  if (!isAuthenticated) {
+    return <Login />;
   }
 
-  // Render the main app
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
