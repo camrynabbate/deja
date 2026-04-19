@@ -82,7 +82,73 @@ export default function Admin() {
     queryFn: () => base44.entities.ClothingItem.list('-created_date', 500),
   });
 
+  const [fetching, setFetching] = useState(false);
+
   const updateField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+  const fetchProductDetails = async () => {
+    const url = form.source_url.trim();
+    if (!url) {
+      setAddStatus('error');
+      setAddMessage('Paste a product URL first.');
+      return;
+    }
+
+    setFetching(true);
+    setAddStatus(null);
+    try {
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxyUrl);
+      const html = await res.text();
+
+      const getMeta = (property) => {
+        const match = html.match(new RegExp(`<meta[^>]*(?:property|name)=["']${property}["'][^>]*content=["']([^"']*)["']`, 'i'))
+          || html.match(new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*(?:property|name)=["']${property}["']`, 'i'));
+        return match?.[1] || '';
+      };
+
+      const title = getMeta('og:title') || getMeta('twitter:title')
+        || (html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] || '').trim();
+
+      const image = getMeta('og:image') || getMeta('twitter:image');
+
+      const description = getMeta('og:description') || getMeta('description') || getMeta('twitter:description');
+
+      const brand = getMeta('og:site_name') || getMeta('product:brand')
+        || (() => { try { return new URL(url).hostname.replace('www.', '').split('.')[0]; } catch { return ''; } })();
+
+      const priceStr = getMeta('product:price:amount') || getMeta('og:price:amount')
+        || (html.match(/"price"\s*:\s*"?([\d.]+)"?/)?.[1] || '');
+      const price = parseFloat(priceStr) || 0;
+
+      let priceTier = 'mid_range';
+      if (price > 0) {
+        if (price < 30) priceTier = 'budget';
+        else if (price < 80) priceTier = 'mid_range';
+        else if (price < 200) priceTier = 'premium';
+        else priceTier = 'luxury';
+      }
+
+      setForm(prev => ({
+        ...prev,
+        title: title || prev.title,
+        brand: brand.charAt(0).toUpperCase() + brand.slice(1) || prev.brand,
+        image_url: image || prev.image_url,
+        description: description || prev.description,
+        price: price || prev.price,
+        price_tier: price ? priceTier : prev.price_tier,
+      }));
+
+      setAddStatus('success');
+      setAddMessage('Product details fetched! Review and edit before adding.');
+      setTimeout(() => setAddStatus(null), 4000);
+    } catch {
+      setAddStatus('error');
+      setAddMessage('Could not fetch details. Fill in manually.');
+    } finally {
+      setFetching(false);
+    }
+  };
 
   const toggleTag = (tag) => {
     setForm(prev => ({
@@ -206,18 +272,29 @@ export default function Admin() {
       <div className="border border-border rounded-2xl p-6 bg-card space-y-5 mb-10">
         <h2 className="font-medium text-foreground text-lg">Add Product</h2>
         <p className="text-sm text-muted-foreground -mt-3">
-          Find a product on a retailer's site, then paste its details here.
+          Paste a product URL and click Auto-fill to grab the details automatically.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Product URL *</label>
-            <Input
-              placeholder="https://www.zara.com/us/en/linen-blazer-p02345..."
-              value={form.source_url}
-              onChange={(e) => updateField('source_url', e.target.value)}
-              className="mt-1"
-            />
+            <div className="flex gap-2 mt-1">
+              <Input
+                placeholder="https://www.zara.com/us/en/linen-blazer-p02345..."
+                value={form.source_url}
+                onChange={(e) => updateField('source_url', e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={fetchProductDetails}
+                disabled={fetching}
+                className="shrink-0 gap-2"
+              >
+                {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+                {fetching ? 'Fetching...' : 'Auto-fill'}
+              </Button>
+            </div>
           </div>
 
           <div>
