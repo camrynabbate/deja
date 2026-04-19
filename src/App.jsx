@@ -14,6 +14,8 @@ import Profile from '@/pages/Profile';
 import Styleboards from '@/pages/Styleboards';
 import StyleboardBuilder from '@/pages/StyleboardBuilder';
 import Admin from '@/pages/Admin';
+import About from '@/pages/About';
+import Privacy from '@/pages/Privacy';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -75,7 +77,11 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <Routes>
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="*" element={<AuthenticatedApp />} />
+          </Routes>
         </Router>
         <Toaster />
       </QueryClientProvider>
