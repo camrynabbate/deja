@@ -1,107 +1,285 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, AlertCircle, Sparkles, Database } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, CheckCircle2, AlertCircle, Database, Plus, Trash2, ExternalLink, Image } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-const SEED_ITEMS = [
-  { title: 'Oversized Linen Blazer', brand: 'Zara', category: 'outerwear', price: 89.90, price_tier: 'premium', color: 'beige', material: 'linen', style_tags: ['minimalist', 'classic'], description: 'Relaxed-fit linen blazer with patch pockets and a single-button closure.', image_url: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600&q=80', source_url: 'https://www.zara.com/us/en/search?searchTerm=linen+blazer' },
-  { title: 'Ribbed Knit Tank', brand: 'COS', category: 'tops', price: 35, price_tier: 'mid_range', color: 'white', material: 'cotton', style_tags: ['minimalist', 'casual'], description: 'Slim-fit ribbed tank top in organic cotton.', image_url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600&q=80', source_url: 'https://www.cos.com/en_usd/search.html?q=ribbed+tank' },
-  { title: 'Wide Leg Trousers', brand: 'Arket', category: 'bottoms', price: 79, price_tier: 'mid_range', color: 'charcoal', material: 'wool blend', style_tags: ['minimalist', 'elegant'], description: 'High-waisted wide-leg trousers with pressed creases.', image_url: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&q=80', source_url: 'https://www.arket.com/en/search?q=wide+leg+trousers' },
-  { title: 'Satin Midi Skirt', brand: 'Mango', category: 'bottoms', price: 49.99, price_tier: 'mid_range', color: 'champagne', material: 'satin', style_tags: ['elegant', 'romantic'], description: 'Bias-cut satin midi skirt with elastic waistband.', image_url: 'https://images.unsplash.com/photo-1583496661160-fb5886a0uj86?w=600&q=80', source_url: 'https://shop.mango.com/us/search?kw=satin+midi+skirt' },
-  { title: 'Chunky Platform Boots', brand: 'ASOS', category: 'shoes', price: 65, price_tier: 'mid_range', color: 'black', material: 'faux leather', style_tags: ['edgy', 'streetwear'], description: 'Lace-up platform boots with chunky sole.', image_url: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=600&q=80', source_url: 'https://www.asos.com/us/search/?q=platform+boots' },
-  { title: 'Cashmere Crew Sweater', brand: 'Uniqlo', category: 'tops', price: 99.90, price_tier: 'premium', color: 'camel', material: 'cashmere', style_tags: ['classic', 'cozy'], description: 'Lightweight cashmere crew neck sweater.', image_url: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&q=80', source_url: 'https://www.uniqlo.com/us/en/search/?q=cashmere+sweater' },
-  { title: 'Pleated Maxi Dress', brand: 'H&M', category: 'dresses', price: 39.99, price_tier: 'mid_range', color: 'sage green', material: 'polyester', style_tags: ['bohemian', 'romantic'], description: 'Flowy pleated maxi dress with adjustable straps.', image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=80', source_url: 'https://www2.hm.com/en_us/search-results.html?q=pleated+maxi+dress' },
-  { title: 'Leather Crossbody Bag', brand: 'Massimo Dutti', category: 'bags', price: 149, price_tier: 'premium', color: 'tan', material: 'leather', style_tags: ['classic', 'elegant'], description: 'Structured crossbody bag in full-grain leather with gold hardware.', image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80', source_url: 'https://www.massimodutti.com/us/search?term=leather+crossbody+bag' },
-  { title: 'Cropped Denim Jacket', brand: 'Topshop', category: 'outerwear', price: 55, price_tier: 'mid_range', color: 'light wash', material: 'denim', style_tags: ['casual', 'trendy'], description: 'Classic cropped denim jacket with button closure.', image_url: 'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=600&q=80', source_url: 'https://www.asos.com/us/search/?q=topshop+denim+jacket' },
-  { title: 'Strappy Heeled Sandals', brand: '& Other Stories', category: 'shoes', price: 129, price_tier: 'premium', color: 'black', material: 'leather', style_tags: ['elegant', 'minimalist'], description: 'Barely-there strappy sandals with a slim heel.', image_url: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=600&q=80', source_url: 'https://www.stories.com/en_usd/search.html?q=strappy+heeled+sandals' },
-  { title: 'Oversized Graphic Tee', brand: 'Weekday', category: 'tops', price: 25, price_tier: 'budget', color: 'black', material: 'cotton', style_tags: ['streetwear', 'casual'], description: 'Boxy-fit graphic print T-shirt in organic cotton.', image_url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&q=80', source_url: 'https://www.weekday.com/en_us/search.html?q=graphic+tee' },
-  { title: 'Wool Blend Coat', brand: 'COS', category: 'outerwear', price: 190, price_tier: 'premium', color: 'navy', material: 'wool blend', style_tags: ['classic', 'elegant'], description: 'Tailored single-breasted coat with notch lapels.', image_url: 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600&q=80', source_url: 'https://www.cos.com/en_usd/search.html?q=wool+coat' },
-  { title: 'Floral Wrap Dress', brand: 'Reformation', category: 'dresses', price: 218, price_tier: 'luxury', color: 'multi', material: 'viscose', style_tags: ['romantic', 'bohemian'], description: 'Feminine wrap dress in a vintage-inspired floral print.', image_url: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600&q=80', source_url: 'https://www.thereformation.com/search?q=floral+wrap+dress' },
-  { title: 'Canvas Tote Bag', brand: 'Monki', category: 'bags', price: 19.99, price_tier: 'budget', color: 'natural', material: 'canvas', style_tags: ['casual', 'minimalist'], description: 'Large canvas tote bag with interior pocket.', image_url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=600&q=80', source_url: 'https://www.monki.com/en/search?q=canvas+tote+bag' },
-  { title: 'High-Rise Straight Jeans', brand: 'Mango', category: 'bottoms', price: 59.99, price_tier: 'mid_range', color: 'medium wash', material: 'denim', style_tags: ['classic', 'casual'], description: 'High-rise straight-leg jeans with raw hem.', image_url: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600&q=80', source_url: 'https://shop.mango.com/us/search?kw=straight+jeans' },
-  { title: 'Silk Camisole', brand: '& Other Stories', category: 'tops', price: 69, price_tier: 'mid_range', color: 'blush', material: 'silk', style_tags: ['romantic', 'elegant'], description: 'Delicate silk camisole with lace trim.', image_url: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=600&q=80', source_url: 'https://www.stories.com/en_usd/search.html?q=silk+camisole' },
-  { title: 'Quilted Chain Bag', brand: 'NA-KD', category: 'bags', price: 45, price_tier: 'mid_range', color: 'black', material: 'faux leather', style_tags: ['trendy', 'elegant'], description: 'Quilted shoulder bag with chain strap detail.', image_url: 'https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=600&q=80', source_url: 'https://www.na-kd.com/en/search?q=quilted+chain+bag' },
-  { title: 'Knit Midi Dress', brand: 'H&M', category: 'dresses', price: 34.99, price_tier: 'mid_range', color: 'chocolate', material: 'knit', style_tags: ['cozy', 'minimalist'], description: 'Body-skimming ribbed knit midi dress.', image_url: 'https://images.unsplash.com/photo-1596783074918-c84cb06531ca?w=600&q=80', source_url: 'https://www2.hm.com/en_us/search-results.html?q=knit+midi+dress' },
-  { title: 'Chunky Gold Hoops', brand: 'Mango', category: 'accessories', price: 22.99, price_tier: 'budget', color: 'gold', material: 'metal', style_tags: ['trendy', 'elegant'], description: 'Thick gold-tone hoop earrings.', image_url: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&q=80', source_url: 'https://shop.mango.com/us/search?kw=gold+hoop+earrings' },
-  { title: 'Puffer Vest', brand: 'Uniqlo', category: 'outerwear', price: 49.90, price_tier: 'mid_range', color: 'olive', material: 'nylon', style_tags: ['sporty', 'casual'], description: 'Ultra-light down puffer vest with zip closure.', image_url: 'https://images.unsplash.com/photo-1544923246-77307dd270b5?w=600&q=80', source_url: 'https://www.uniqlo.com/us/en/search/?q=puffer+vest' },
-  { title: 'Linen Shirt Dress', brand: 'Arket', category: 'dresses', price: 99, price_tier: 'premium', color: 'white', material: 'linen', style_tags: ['minimalist', 'classic'], description: 'Relaxed linen shirt dress with tie waist.', image_url: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&q=80', source_url: 'https://www.arket.com/en/search?q=linen+shirt+dress' },
-  { title: 'Leather Belt', brand: 'Massimo Dutti', category: 'accessories', price: 59, price_tier: 'mid_range', color: 'brown', material: 'leather', style_tags: ['classic', 'elegant'], description: 'Full-grain leather belt with brushed gold buckle.', image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80', source_url: 'https://www.massimodutti.com/us/search?term=leather+belt' },
-  { title: 'Running Sneakers', brand: 'ASOS', category: 'shoes', price: 42, price_tier: 'mid_range', color: 'white', material: 'mesh', style_tags: ['sporty', 'casual'], description: 'Lightweight mesh running sneakers with cushioned sole.', image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80', source_url: 'https://www.asos.com/us/search/?q=white+running+sneakers' },
-  { title: 'Velvet Blazer', brand: 'River Island', category: 'outerwear', price: 85, price_tier: 'premium', color: 'burgundy', material: 'velvet', style_tags: ['edgy', 'elegant'], description: 'Fitted velvet blazer with satin lining.', image_url: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600&q=80', source_url: 'https://www.riverisland.com/c/search?term=velvet+blazer' },
-  { title: 'Cargo Pants', brand: 'Weekday', category: 'bottoms', price: 45, price_tier: 'mid_range', color: 'khaki', material: 'cotton', style_tags: ['streetwear', 'casual'], description: 'Relaxed-fit cargo pants with side pockets.', image_url: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&q=80', source_url: 'https://www.weekday.com/en_us/search.html?q=cargo+pants' },
-  { title: 'Silk Scarf', brand: 'COS', category: 'accessories', price: 39, price_tier: 'mid_range', color: 'terracotta', material: 'silk', style_tags: ['classic', 'elegant'], description: 'Printed silk scarf in abstract motif.', image_url: 'https://images.unsplash.com/photo-1601924921557-45e8ffb0f4a3?w=600&q=80', source_url: 'https://www.cos.com/en_usd/search.html?q=silk+scarf' },
-  { title: 'Bodycon Mini Dress', brand: 'NA-KD', category: 'dresses', price: 32, price_tier: 'mid_range', color: 'black', material: 'jersey', style_tags: ['trendy', 'edgy'], description: 'Figure-hugging mini dress with ruched detailing.', image_url: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=600&q=80', source_url: 'https://www.na-kd.com/en/search?q=bodycon+mini+dress' },
-  { title: 'Woven Basket Bag', brand: 'Mango', category: 'bags', price: 35.99, price_tier: 'mid_range', color: 'natural', material: 'straw', style_tags: ['bohemian', 'casual'], description: 'Hand-woven basket bag with leather handles.', image_url: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&q=80', source_url: 'https://shop.mango.com/us/search?kw=basket+bag' },
-  { title: 'Ribbed Turtleneck', brand: 'Uniqlo', category: 'tops', price: 29.90, price_tier: 'budget', color: 'cream', material: 'merino wool', style_tags: ['cozy', 'classic'], description: 'Fine-gauge merino wool ribbed turtleneck.', image_url: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&q=80', source_url: 'https://www.uniqlo.com/us/en/search/?q=merino+turtleneck' },
-  { title: 'Leopard Print Midi Skirt', brand: 'Topshop', category: 'bottoms', price: 48, price_tier: 'mid_range', color: 'leopard', material: 'viscose', style_tags: ['trendy', 'edgy'], description: 'Satin leopard print midi skirt with side slit.', image_url: 'https://images.unsplash.com/photo-1583496661160-fb5886a0uj86?w=600&q=80', source_url: 'https://www.asos.com/us/search/?q=topshop+leopard+skirt' },
-];
+const CATEGORIES = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'bags', 'accessories', 'activewear', 'swimwear'];
+const PRICE_TIERS = ['budget', 'mid_range', 'premium', 'luxury'];
+const STYLE_TAGS = ['minimalist', 'casual', 'elegant', 'bohemian', 'streetwear', 'trendy', 'cozy', 'classic', 'preppy', 'edgy', 'romantic', 'sporty'];
+
+const emptyForm = {
+  title: '',
+  brand: '',
+  category: 'tops',
+  price: '',
+  price_tier: 'mid_range',
+  color: '',
+  material: '',
+  style_tags: [],
+  description: '',
+  image_url: '',
+  source_url: '',
+};
 
 export default function Admin() {
-  const [status, setStatus] = useState(null);
-  const [message, setMessage] = useState('');
+  const [form, setForm] = useState(emptyForm);
+  const [addStatus, setAddStatus] = useState(null);
+  const [addMessage, setAddMessage] = useState('');
   const queryClient = useQueryClient();
 
-  const handleSeedData = async () => {
-    setStatus('loading');
-    setMessage('');
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ['clothingItems'],
+    queryFn: () => base44.entities.ClothingItem.list('-created_date', 500),
+  });
 
+  const updateField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+  const toggleTag = (tag) => {
+    setForm(prev => ({
+      ...prev,
+      style_tags: prev.style_tags.includes(tag)
+        ? prev.style_tags.filter(t => t !== tag)
+        : [...prev.style_tags, tag],
+    }));
+  };
+
+  const handleAdd = async () => {
+    if (!form.title.trim() || !form.source_url.trim()) {
+      setAddStatus('error');
+      setAddMessage('Title and product URL are required.');
+      return;
+    }
+
+    setAddStatus('loading');
     try {
-      // Clear existing items
-      const existing = await base44.entities.ClothingItem.list('-created_date', 500);
-      for (const item of existing) {
-        await base44.entities.ClothingItem.delete(item.id);
-      }
-
-      // Add seed items
-      for (const item of SEED_ITEMS) {
-        await base44.entities.ClothingItem.create({ ...item, likes_count: 0 });
-      }
-
+      await base44.entities.ClothingItem.create({
+        ...form,
+        price: form.price ? parseFloat(form.price) : 0,
+        likes_count: 0,
+      });
       queryClient.invalidateQueries({ queryKey: ['clothingItems'] });
-      setStatus('success');
-      setMessage(`Loaded ${SEED_ITEMS.length} items into the feed!`);
+      setForm(emptyForm);
+      setAddStatus('success');
+      setAddMessage('Product added!');
+      setTimeout(() => setAddStatus(null), 3000);
     } catch (err) {
-      setStatus('error');
-      setMessage(err.message || 'Something went wrong.');
+      setAddStatus('error');
+      setAddMessage(err.message || 'Failed to add product.');
     }
   };
 
-  return (
-    <div className="max-w-xl mx-auto px-6 py-16">
-      <h1 className="font-serif text-3xl font-semibold mb-2">Admin</h1>
-      <p className="text-muted-foreground text-sm mb-10">Manage product data</p>
+  const handleDelete = async (id) => {
+    await base44.entities.ClothingItem.delete(id);
+    queryClient.invalidateQueries({ queryKey: ['clothingItems'] });
+  };
 
-      <div className="border border-border rounded-2xl p-6 bg-card space-y-4">
-        <div>
-          <h2 className="font-medium text-foreground">Load Sample Products</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Populates the feed with {SEED_ITEMS.length} curated fashion items. This will replace any existing items.
-          </p>
+  return (
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+      <h1 className="font-serif text-3xl font-semibold mb-2">Admin</h1>
+      <p className="text-muted-foreground text-sm mb-10">Add real products to your feed</p>
+
+      {/* Add Product Form */}
+      <div className="border border-border rounded-2xl p-6 bg-card space-y-5 mb-10">
+        <h2 className="font-medium text-foreground text-lg">Add Product</h2>
+        <p className="text-sm text-muted-foreground -mt-3">
+          Find a product on a retailer's site, then paste its details here.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Product URL *</label>
+            <Input
+              placeholder="https://www.zara.com/us/en/linen-blazer-p02345..."
+              value={form.source_url}
+              onChange={(e) => updateField('source_url', e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Title *</label>
+            <Input
+              placeholder="Oversized Linen Blazer"
+              value={form.title}
+              onChange={(e) => updateField('title', e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Brand</label>
+            <Input
+              placeholder="Zara"
+              value={form.brand}
+              onChange={(e) => updateField('brand', e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Price ($)</label>
+            <Input
+              type="number"
+              placeholder="89.90"
+              value={form.price}
+              onChange={(e) => updateField('price', e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Color</label>
+            <Input
+              placeholder="beige"
+              value={form.color}
+              onChange={(e) => updateField('color', e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Material</label>
+            <Input
+              placeholder="linen"
+              value={form.material}
+              onChange={(e) => updateField('material', e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Category</label>
+            <select
+              value={form.category}
+              onChange={(e) => updateField('category', e.target.value)}
+              className="mt-1 w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+            >
+              {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Price Tier</label>
+            <select
+              value={form.price_tier}
+              onChange={(e) => updateField('price_tier', e.target.value)}
+              className="mt-1 w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+            >
+              {PRICE_TIERS.map(t => <option key={t} value={t}>{t.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>)}
+            </select>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Image URL</label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                placeholder="Right-click product image → Copy Image Address"
+                value={form.image_url}
+                onChange={(e) => updateField('image_url', e.target.value)}
+              />
+              {form.image_url && (
+                <div className="w-9 h-9 rounded-md border border-border overflow-hidden shrink-0">
+                  <img src={form.image_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Description</label>
+            <Textarea
+              placeholder="Short product description..."
+              value={form.description}
+              onChange={(e) => updateField('description', e.target.value)}
+              className="mt-1 min-h-[60px]"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">Style Tags</label>
+            <div className="flex flex-wrap gap-2">
+              {STYLE_TAGS.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                    form.style_tags.includes(tag)
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <Button
-          onClick={handleSeedData}
-          disabled={status === 'loading'}
-          className="gap-2 w-full"
-        >
-          {status === 'loading' ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Loading items...</>
+        <Button onClick={handleAdd} disabled={addStatus === 'loading'} className="gap-2 w-full">
+          {addStatus === 'loading' ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Adding...</>
           ) : (
-            <><Database className="w-4 h-4" /> Load Sample Data</>
+            <><Plus className="w-4 h-4" /> Add Product</>
           )}
         </Button>
 
-        {status === 'success' && (
+        {addStatus === 'success' && (
           <div className="flex items-center gap-2 text-sm text-green-600">
-            <CheckCircle2 className="w-4 h-4" />
-            {message}
+            <CheckCircle2 className="w-4 h-4" /> {addMessage}
           </div>
         )}
-        {status === 'error' && (
+        {addStatus === 'error' && (
           <div className="flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="w-4 h-4" />
-            {message}
+            <AlertCircle className="w-4 h-4" /> {addMessage}
+          </div>
+        )}
+      </div>
+
+      {/* Current Products */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-medium text-foreground text-lg">Current Products ({items.length})</h2>
+        </div>
+
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        ) : items.length === 0 ? (
+          <div className="text-center py-12 border border-dashed border-border rounded-2xl">
+            <p className="text-muted-foreground text-sm">No products yet. Add your first one above.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:border-border transition-colors">
+                <div className="w-12 h-16 rounded-lg overflow-hidden bg-secondary shrink-0">
+                  {item.image_url ? (
+                    <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Image className="w-4 h-4 text-muted-foreground/30" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.brand}{item.price ? ` · $${item.price}` : ''}{item.category ? ` · ${item.category}` : ''}
+                  </p>
+                </div>
+                {item.source_url && (
+                  <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="shrink-0 p-2 text-muted-foreground hover:text-foreground">
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+                <button onClick={() => handleDelete(item.id)} className="shrink-0 p-2 text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
