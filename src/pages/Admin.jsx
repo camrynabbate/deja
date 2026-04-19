@@ -77,7 +77,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 h-screen overflow-y-auto">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
       <h1 className="font-serif text-3xl font-semibold mb-2">Admin</h1>
       <p className="text-muted-foreground text-sm mb-10">Add real products to your feed</p>
 
