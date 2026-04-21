@@ -35,8 +35,11 @@ export default function Login() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    if (!email.trim() || !password) {
+      setError('Email and password are required.');
+      return;
+    }
     setError('');
     setLoading(true);
 
@@ -76,33 +79,36 @@ export default function Login() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {isSignUp && (
-            <Input
-              type="text"
-              placeholder="Your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoComplete="name"
-            />
-          )}
+        <div className="space-y-4">
           <Input
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
             autoComplete="email"
           />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            autoComplete={isSignUp ? 'new-password' : 'current-password'}
-          />
+
+          {!resetSent && (
+            <>
+              {isSignUp && (
+                <Input
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                />
+              )}
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={6}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              />
+            </>
+          )}
 
           {error && (
             <p className="text-sm text-destructive">{error}</p>
@@ -111,13 +117,19 @@ export default function Login() {
             <p className="text-sm text-green-600">Password reset email sent. Check your inbox.</p>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : isSignUp ? 'Create Account' : 'Sign In'}
-          </Button>
+          {!resetSent && (
+            <Button
+              className="w-full"
+              disabled={loading}
+              onClick={handleSubmit}
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : isSignUp ? 'Create Account' : 'Sign In'}
+            </Button>
+          )}
 
-          {!isSignUp && (
+          {!isSignUp && !resetSent && (
             <button
               type="button"
               onClick={handleResetPassword}
@@ -127,7 +139,17 @@ export default function Login() {
               Forgot password?
             </button>
           )}
-        </form>
+
+          {resetSent && (
+            <button
+              type="button"
+              onClick={() => setResetSent(false)}
+              className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Back to sign in
+            </button>
+          )}
+        </div>
 
         <div className="text-center">
           <button
