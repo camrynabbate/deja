@@ -12,11 +12,12 @@ export default function Login() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
   const handleResetPassword = async () => {
     if (!email.trim()) {
-      setError('Enter your email above, then click reset.');
+      setError('Enter your email to receive a reset link.');
       return;
     }
     setError('');
@@ -75,7 +76,7 @@ export default function Login() {
             déjà
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
-            {isSignUp ? 'Create your account' : 'Sign in to your account'}
+            {resetMode ? 'Reset your password' : isSignUp ? 'Create your account' : 'Sign in to your account'}
           </p>
         </div>
 
@@ -88,7 +89,7 @@ export default function Login() {
             autoComplete="email"
           />
 
-          {!resetSent && (
+          {!resetMode && (
             <>
               {isSignUp && (
                 <Input
@@ -117,37 +118,49 @@ export default function Login() {
             <p className="text-sm text-green-600">Password reset email sent. Check your inbox.</p>
           )}
 
-          {!resetSent && (
-            <Button
-              className="w-full"
-              disabled={loading}
-              onClick={handleSubmit}
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : isSignUp ? 'Create Account' : 'Sign In'}
-            </Button>
-          )}
+          {resetMode ? (
+            <>
+              {!resetSent && (
+                <Button
+                  className="w-full"
+                  disabled={loading}
+                  onClick={handleResetPassword}
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : 'Send Reset Link'}
+                </Button>
+              )}
+              <button
+                type="button"
+                onClick={() => { setResetMode(false); setResetSent(false); setError(''); }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Back to sign in
+              </button>
+            </>
+          ) : (
+            <>
+              <Button
+                className="w-full"
+                disabled={loading}
+                onClick={handleSubmit}
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isSignUp ? 'Create Account' : 'Sign In'}
+              </Button>
 
-          {!isSignUp && !resetSent && (
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              disabled={loading}
-              className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Forgot password?
-            </button>
-          )}
-
-          {resetSent && (
-            <button
-              type="button"
-              onClick={() => setResetSent(false)}
-              className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Back to sign in
-            </button>
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={() => { setResetMode(true); setError(''); }}
+                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot password?
+                </button>
+              )}
+            </>
           )}
         </div>
 
