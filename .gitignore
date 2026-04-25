@@ -29,3 +29,12 @@ dist-ssr
 
 .env
 .vite
+
+# iOS / Capacitor
+ios/App/Pods/
+ios/App/Podfile.lock
+ios/App/build/
+ios/DerivedData/
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+ios/App/App/public/
