@@ -12,6 +12,12 @@ const config: CapacitorConfig = {
   server: {
     iosScheme: 'https',
   },
+  plugins: {
+    Keyboard: {
+      resize: 'native',
+      resizeOnFullScreen: true,
+    },
+  },
 };
 
 export default config;

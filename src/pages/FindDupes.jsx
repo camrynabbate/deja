@@ -57,28 +57,28 @@ export default function FindDupes() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-      <div className="mb-10">
-        <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground tracking-tight">
-          Find Dupes
-        </h1>
-        <p className="text-muted-foreground mt-2 text-sm">
-          Describe a piece you love — we'll find similar items you can actually buy
-        </p>
-      </div>
-
-      {/* Search */}
-      <div className="mb-10 space-y-4">
+    <div className="max-w-4xl mx-auto">
+      {/* Sticky search header */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-xl border-b border-border/40 px-4 sm:px-6 pt-6 pb-4 space-y-3">
+        <div>
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+            Find Dupes
+          </h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+            Describe a piece you love — we'll find similar items you can actually buy
+          </p>
+        </div>
         <Textarea
-          placeholder="e.g. 'black leather crossbody bag with gold chain' or 'casual white linen dress'"
+          placeholder="e.g. black leather crossbody bag"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="min-h-[100px] text-sm resize-none bg-card border-border/60 rounded-2xl px-5 py-4 shadow-sm focus-visible:ring-1 focus-visible:ring-accent/50 placeholder:text-muted-foreground/50"
+          rows={2}
+          className="min-h-[64px] text-base resize-none bg-card border-border/60 rounded-2xl px-4 py-3 shadow-sm focus-visible:ring-1 focus-visible:ring-accent/50 placeholder:text-muted-foreground/50"
         />
         <Button
           onClick={handleSearch}
           disabled={!description.trim() || searching}
-          className="gap-2"
+          className="gap-2 w-full sm:w-auto"
         >
           {searching ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Searching...</>
@@ -94,7 +94,7 @@ export default function FindDupes() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
+            className="space-y-6 px-4 sm:px-6 py-6"
           >
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-accent" />
@@ -112,9 +112,9 @@ export default function FindDupes() {
                 {results.map((item, index) => (
                   <motion.div
                     key={item.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.08 }}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.18, delay: Math.min(index, 5) * 0.03 }}
                   >
                     <a
                       href={item.source_url}
