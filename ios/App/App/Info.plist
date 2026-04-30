@@ -47,5 +47,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>déjà uses your camera to find similar items based on photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>déjà uses photos from your library to find similar items.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>déjà saves looks you create back to your photo library.</string>
 </dict>
 </plist>

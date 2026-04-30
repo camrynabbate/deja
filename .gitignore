@@ -30,6 +30,10 @@ dist-ssr
 .env
 .vite
 
+# Service account / secrets
+scripts/firebase-admin-key.json
+scripts/*-key.json
+
 # iOS / Capacitor
 ios/App/Pods/
 ios/App/Podfile.lock

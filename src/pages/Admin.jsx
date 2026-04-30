@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, CheckCircle2, AlertCircle, Database, Plus, Trash2, ExternalLink, Image, Upload } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Database, Plus, Trash2, ExternalLink, Image, Upload, Pencil, X } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const CATEGORIES = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'bags', 'accessories', 'activewear', 'swimwear'];
@@ -73,6 +73,7 @@ function MigrateButton({ localItems, onDone }) {
 
 export default function Admin() {
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
   const [addStatus, setAddStatus] = useState(null);
   const [addMessage, setAddMessage] = useState('');
   const queryClient = useQueryClient();
@@ -168,20 +169,51 @@ export default function Admin() {
 
     setAddStatus('loading');
     try {
-      await base44.entities.ClothingItem.create({
+      const payload = {
         ...form,
         price: form.price ? parseFloat(form.price) : 0,
-        likes_count: 0,
-      });
+      };
+      if (editingId) {
+        await base44.entities.ClothingItem.update(editingId, payload);
+        setAddMessage('Product updated!');
+      } else {
+        await base44.entities.ClothingItem.create({ ...payload, likes_count: 0 });
+        setAddMessage('Product added!');
+      }
       queryClient.invalidateQueries({ queryKey: ['clothingItems'] });
       setForm(emptyForm);
+      setEditingId(null);
       setAddStatus('success');
-      setAddMessage('Product added!');
       setTimeout(() => setAddStatus(null), 3000);
     } catch (err) {
       setAddStatus('error');
-      setAddMessage(err.message || 'Failed to add product.');
+      setAddMessage(err.message || 'Failed to save product.');
     }
+  };
+
+  const startEdit = (item) => {
+    setForm({
+      title: item.title || '',
+      brand: item.brand || '',
+      category: item.category || 'tops',
+      price: item.price || '',
+      price_tier: item.price_tier || 'mid_range',
+      color: item.color || '',
+      material: item.material || '',
+      style_tags: item.style_tags || [],
+      description: item.description || '',
+      image_url: item.image_url || '',
+      source_url: item.source_url || '',
+    });
+    setEditingId(item.id);
+    setAddStatus(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setAddStatus(null);
   };
 
   const handleDelete = async (id) => {
@@ -268,11 +300,26 @@ export default function Admin() {
         } catch { return null; }
       })()}
 
-      {/* Add Product Form */}
+      {/* Add / Edit Product Form */}
       <div className="border border-border rounded-2xl p-6 bg-card space-y-5 mb-10">
-        <h2 className="font-medium text-foreground text-lg">Add Product</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-medium text-foreground text-lg">
+            {editingId ? 'Edit Product' : 'Add Product'}
+          </h2>
+          {editingId && (
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-3.5 h-3.5" /> Cancel
+            </button>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground -mt-3">
-          Paste a product URL and click Auto-fill to grab the details automatically.
+          {editingId
+            ? 'Update the fields below and save your changes.'
+            : 'Paste a product URL and click Auto-fill to grab the details automatically.'}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -419,7 +466,9 @@ export default function Admin() {
 
         <Button onClick={handleAdd} disabled={addStatus === 'loading'} className="gap-2 w-full">
           {addStatus === 'loading' ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Adding...</>
+            <><Loader2 className="w-4 h-4 animate-spin" /> {editingId ? 'Saving...' : 'Adding...'}</>
+          ) : editingId ? (
+            <><Pencil className="w-4 h-4" /> Save Changes</>
           ) : (
             <><Plus className="w-4 h-4" /> Add Product</>
           )}
@@ -506,6 +555,17 @@ export default function Admin() {
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 )}
+                <button
+                  onClick={() => startEdit(item)}
+                  aria-label={`Edit ${item.title}`}
+                  className={`shrink-0 p-2 transition-colors ${
+                    editingId === item.id
+                      ? 'text-accent'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
                 <button onClick={() => handleDelete(item.id)} className="shrink-0 p-2 text-muted-foreground hover:text-destructive transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>

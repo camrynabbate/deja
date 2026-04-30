@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { fetchFeedItems } from '@/lib/algolia';
 import { Skeleton } from '@/components/ui/skeleton';
 import FeedGrid from '@/components/feed/FeedGrid';
 import CategoryFilter from '@/components/feed/CategoryFilter';
@@ -10,6 +10,8 @@ import ItemDetailModal from '@/components/feed/ItemDetailModal';
 import usePreferences from '@/hooks/usePreferences';
 import useRecentlyViewed from '@/hooks/useRecentlyViewed';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
+import useGenderPreference from '@/hooks/useGenderPreference';
+import { cn } from '@/lib/utils';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
 
 
@@ -19,6 +21,7 @@ export default function Feed() {
   const [selectedItem, setSelectedItem] = useState(null);
   const { likedIds, savedIds, dislikedIds, scoreItem, recordPreference, tasteProfile } = usePreferences();
   const { viewed, addViewed } = useRecentlyViewed();
+  const { preference: genderPref, setPreference: setGenderPref } = useGenderPreference();
   const queryClient = useQueryClient();
 
   const handleOpenItem = (item) => {
@@ -27,14 +30,14 @@ export default function Feed() {
   };
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: ['clothingItems'],
-    queryFn: () => base44.entities.ClothingItem.list('-created_date', 100),
+    queryKey: ['feedItems', genderPref],
+    queryFn: () => fetchFeedItems({ hitsPerPage: 100, gender: genderPref }),
     staleTime: 5 * 60 * 1000,
     placeholderData: (prev) => prev, // keep showing old data while refetching
   });
 
   const { pullDistance, isPulling } = usePullToRefresh(() => {
-    queryClient.invalidateQueries({ queryKey: ['clothingItems'] });
+    queryClient.invalidateQueries({ queryKey: ['feedItems'] });
     queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
   });
 
@@ -89,6 +92,31 @@ export default function Feed() {
       </div>
 
       <RecentlyViewed items={viewed} likedIds={likedIds} onOpen={handleOpenItem} />
+
+      <div className="mb-4">
+        <div role="tablist" aria-label="Show items for" className="inline-flex p-1 rounded-full bg-secondary">
+          {[
+            { value: 'womens', label: 'Women' },
+            { value: 'mens', label: 'Men' },
+            { value: 'all', label: 'Both' },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              role="tab"
+              aria-selected={genderPref === opt.value}
+              onClick={() => setGenderPref(opt.value)}
+              className={cn(
+                'px-4 py-1.5 rounded-full text-sm font-medium transition-colors',
+                genderPref === opt.value
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="mb-8 space-y-3">
         <div className="overflow-x-auto">

@@ -1,59 +1,73 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
+import { searchClothingStructured } from '@/lib/algolia';
+import { pickImage, describeImage } from '@/lib/visualSearch';
+import { parseFashionQuery } from '@/lib/queryParser';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Loader2, Sparkles, ExternalLink } from 'lucide-react';
+import { Search, Loader2, Sparkles, ExternalLink, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
-function scoreMatch(item, keywords) {
-  let score = 0;
-  const searchable = [
-    item.title,
-    item.brand,
-    item.description,
-    item.category,
-    item.color,
-    item.material,
-    ...(item.style_tags || []),
-  ].join(' ').toLowerCase();
-
-  for (const kw of keywords) {
-    if (searchable.includes(kw)) score += 1;
-  }
-  return score;
-}
+const SORT_OPTIONS = [
+  { value: 'relevance', label: 'Recommended' },
+  { value: 'price-asc', label: 'Price ↑' },
+  { value: 'price-desc', label: 'Price ↓' },
+];
 
 export default function FindDupes() {
   const [description, setDescription] = useState('');
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [error, setError] = useState(null);
+  const [sortBy, setSortBy] = useState('relevance');
 
-  const { data: allItems = [] } = useQuery({
-    queryKey: ['clothingItems'],
-    queryFn: () => base44.entities.ClothingItem.list('-created_date', 500),
-  });
+  const sortedResults = useMemo(() => {
+    if (!results) return null;
+    if (sortBy === 'relevance') return results;
+    const copy = [...results];
+    if (sortBy === 'price-asc') {
+      copy.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
+    } else if (sortBy === 'price-desc') {
+      copy.sort((a, b) => (b.price || -Infinity) - (a.price || -Infinity));
+    }
+    return copy;
+  }, [results, sortBy]);
 
-  const handleSearch = () => {
-    if (!description.trim()) return;
+  const runSearch = async (query) => {
+    if (!query.trim()) return;
     setSearching(true);
-
-    const keywords = description.toLowerCase()
-      .split(/[\s,]+/)
-      .filter(w => w.length > 2);
-
-    // Only show items that have a source_url
-    const scored = allItems
-      .filter(item => item.source_url)
-      .map(item => ({ ...item, _score: scoreMatch(item, keywords) }))
-      .filter(item => item._score > 0)
-      .sort((a, b) => b._score - a._score)
-      .slice(0, 10);
-
-    setTimeout(() => {
-      setResults(scored);
+    setError(null);
+    try {
+      const parsed = await parseFashionQuery(query);
+      const hits = await searchClothingStructured(parsed, { hitsPerPage: 20 });
+      const filtered = hits.filter((h) => h.source_url && h.image_url);
+      setResults(filtered.map((h) => ({ ...h, id: h.objectID })));
+    } catch (err) {
+      setError(err.message || 'Search failed');
+      setResults([]);
+    } finally {
       setSearching(false);
-    }, 500);
+    }
+  };
+
+  const handleSearch = () => runSearch(description);
+
+  const handleImageSearch = async () => {
+    setError(null);
+    setAnalyzing(true);
+    try {
+      const image = await pickImage();
+      const generated = await describeImage(image);
+      setDescription(generated);
+      await runSearch(generated);
+    } catch (err) {
+      if (err?.message && !/cancel/i.test(err.message)) {
+        setError(err.message);
+      }
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   return (
@@ -85,17 +99,31 @@ export default function FindDupes() {
           enterKeyHint="search"
           className="min-h-[64px] text-base resize-none bg-card border-border/60 rounded-2xl px-4 py-3 shadow-sm focus-visible:ring-1 focus-visible:ring-accent/50 placeholder:text-muted-foreground/50"
         />
-        <Button
-          onClick={handleSearch}
-          disabled={!description.trim() || searching}
-          className="gap-2 w-full sm:w-auto"
-        >
-          {searching ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Searching...</>
-          ) : (
-            <><Search className="w-4 h-4" /> Find Dupes</>
-          )}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            onClick={handleSearch}
+            disabled={!description.trim() || searching || analyzing}
+            className="gap-2 flex-1"
+          >
+            {searching ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Searching...</>
+            ) : (
+              <><Search className="w-4 h-4" /> Find Dupes</>
+            )}
+          </Button>
+          <Button
+            onClick={handleImageSearch}
+            disabled={searching || analyzing}
+            variant="outline"
+            className="gap-2 flex-1"
+          >
+            {analyzing ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing image…</>
+            ) : (
+              <><Camera className="w-4 h-4" /> Search by photo</>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Results — only this area scrolls */}
@@ -107,20 +135,42 @@ export default function FindDupes() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6 px-4 sm:px-6 py-6"
           >
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-accent" />
-              <h2 className="font-serif text-xl font-semibold">
-                {results.length} {results.length === 1 ? 'Match' : 'Matches'} Found
-              </h2>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent" />
+                <h2 className="font-serif text-xl font-semibold">
+                  {results.length} {results.length === 1 ? 'Match' : 'Matches'} Found
+                </h2>
+              </div>
+              {results.length > 1 && (
+                <div className="inline-flex p-0.5 rounded-full bg-secondary text-xs">
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSortBy(opt.value)}
+                      className={cn(
+                        'px-3 py-1 rounded-full font-medium transition-colors whitespace-nowrap',
+                        sortBy === opt.value
+                          ? 'bg-card text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {results.length === 0 ? (
+            {error ? (
+              <p className="text-sm text-destructive py-8 text-center">{error}</p>
+            ) : results.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">
                 No matches yet. Try different keywords, or check back as we add more products.
               </p>
             ) : (
               <div className="grid gap-3">
-                {results.map((item, index) => (
+                {sortedResults.map((item, index) => (
                   <motion.div
                     key={item.id}
                     initial={{ opacity: 0, y: 8 }}
