@@ -30,20 +30,17 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
@@ -53,5 +50,7 @@
 	<string>déjà uses photos from your library to find similar items.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>déjà saves looks you create back to your photo library.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Allowing tracking lets déjà credit the brands and creators when you shop the items you discover.</string>
 </dict>
 </plist>

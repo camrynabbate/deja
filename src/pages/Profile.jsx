@@ -1,21 +1,53 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { auth } from '@/lib/firebase';
 import usePreferences from '@/hooks/usePreferences';
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Bookmark, Search, TrendingUp, LogOut, Trash2 } from 'lucide-react';
+import { Heart, Bookmark, Search, TrendingUp, LogOut, Trash2, UserX } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+
+async function wipeUserData() {
+  const prefs = await base44.entities.UserPreference.list('-created_date', 1000);
+  for (const p of prefs) await base44.entities.UserPreference.delete(p.id);
+  const boards = await base44.entities.Styleboard.list('-created_date', 1000);
+  for (const b of boards) await base44.entities.Styleboard.delete(b.id);
+  const dupes = await base44.entities.DupeSearch.list('-created_date', 1000);
+  for (const s of dupes) await base44.entities.DupeSearch.delete(s.id);
+}
 
 export default function Profile() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleteAccountConfirm, setDeleteAccountConfirm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const { preferences, tasteProfile, likedIds, savedIds } = usePreferences();
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      await wipeUserData();
+      await auth.currentUser.delete();
+      queryClient.clear();
+      toast.success('Account deleted.');
+    } catch (err) {
+      if (err?.code === 'auth/requires-recent-login') {
+        toast.error('Please sign in again to confirm account deletion.');
+        await logout();
+      } else {
+        toast.error('Could not delete account. Please try again.');
+        setIsDeletingAccount(false);
+      }
+    }
+  };
 
   const { data: searches = [] } = useQuery({
     queryKey: ['dupeSearches'],
@@ -135,11 +167,21 @@ export default function Profile() {
         <div>
           <Button
             variant="ghost"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            className="text-muted-foreground hover:text-foreground"
             onClick={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="w-4 h-4 mr-2" />
             Clear All Data
+          </Button>
+        </div>
+        <div>
+          <Button
+            variant="ghost"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setShowDeleteAccountDialog(true)}
+          >
+            <UserX className="w-4 h-4 mr-2" />
+            Delete Account
           </Button>
         </div>
       </div>
@@ -174,15 +216,7 @@ export default function Profile() {
                 onClick={async () => {
                   setIsDeleting(true);
                   try {
-                    const prefs = await base44.entities.UserPreference.list('-created_date', 1000);
-                    for (const p of prefs) await base44.entities.UserPreference.delete(p.id);
-
-                    const boards = await base44.entities.Styleboard.list('-created_date', 1000);
-                    for (const b of boards) await base44.entities.Styleboard.delete(b.id);
-
-                    const dupes = await base44.entities.DupeSearch.list('-created_date', 1000);
-                    for (const s of dupes) await base44.entities.DupeSearch.delete(s.id);
-
+                    await wipeUserData();
                     queryClient.invalidateQueries();
                     setShowDeleteDialog(false);
                     setDeleteConfirm('');
@@ -192,6 +226,42 @@ export default function Profile() {
                 }}
               >
                 {isDeleting ? 'Deleting...' : 'Clear Everything'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={showDeleteAccountDialog} onOpenChange={setShowDeleteAccountDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl">Delete Account</DialogTitle>
+            <DialogDescription>
+              This permanently deletes your account, all preferences, saved items, styleboards, and search history. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Type <span className="font-semibold text-foreground">DELETE</span> to confirm.
+            </p>
+            <input
+              type="text"
+              value={deleteAccountConfirm}
+              onChange={(e) => setDeleteAccountConfirm(e.target.value)}
+              placeholder="Type DELETE"
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => { setShowDeleteAccountDialog(false); setDeleteAccountConfirm(''); }}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={deleteAccountConfirm !== 'DELETE' || isDeletingAccount}
+                onClick={handleDeleteAccount}
+              >
+                {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
               </Button>
             </div>
           </div>

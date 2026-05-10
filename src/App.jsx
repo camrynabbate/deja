@@ -2,12 +2,13 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import AppLayout from '@/components/layout/AppLayout.jsx';
 import Login from '@/pages/Login';
 import Feed from '@/pages/Feed';
+import { initTracking } from '@/lib/tracking';
 
 const FindDupes = lazy(() => import('@/pages/FindDupes'));
 const Saved = lazy(() => import('@/pages/Saved'));
@@ -48,6 +49,10 @@ class ErrorBoundary extends React.Component {
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) initTracking();
+  }, [isAuthenticated]);
 
   if (isLoadingAuth) {
     return (

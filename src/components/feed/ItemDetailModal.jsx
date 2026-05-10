@@ -5,9 +5,10 @@ import { useAuth } from '@/lib/AuthContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { BottomSheet, BottomSheetItem } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/button';
-import { Heart, Bookmark, ExternalLink, X, Layout, ChevronRight } from 'lucide-react';
+import { Heart, Bookmark, ExternalLink, X, Layout, ChevronRight, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { shareItem, hapticLight } from '@/lib/native';
 
 function useIsMobile() {
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
@@ -127,6 +128,24 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
                 Shop
               </Button>
             </a>
+          )}
+          {item.source_url && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                hapticLight();
+                shareItem({
+                  title: item.title,
+                  text: `${item.title}${item.brand ? ` by ${item.brand}` : ''} on déjà`,
+                  url: item.source_url,
+                });
+              }}
+              className="gap-1.5"
+            >
+              <Share2 className="w-4 h-4" />
+              Share
+            </Button>
           )}
         </div>
 

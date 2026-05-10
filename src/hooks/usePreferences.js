@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { hapticLight, hapticMedium } from '@/lib/native';
 
 export default function usePreferences() {
   const queryClient = useQueryClient();
@@ -74,6 +75,7 @@ export default function usePreferences() {
   const recordPreference = useCallback((item, action) => {
     const existingSet = action === 'like' ? likedIds : action === 'save' ? savedIds : dislikedIds;
     if (existingSet.has(item.id)) return;
+    if (action === 'dislike') hapticMedium(); else hapticLight();
     createPref.mutate({
       item_id: item.id,
       action,
