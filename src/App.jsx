@@ -2,20 +2,27 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import AppLayout from '@/components/layout/AppLayout.jsx';
 import Login from '@/pages/Login';
 import Feed from '@/pages/Feed';
-import FindDupes from '@/pages/FindDupes';
-import Saved from '@/pages/Saved';
-import Profile from '@/pages/Profile';
-import Styleboards from '@/pages/Styleboards';
-import StyleboardBuilder from '@/pages/StyleboardBuilder';
-import Admin from '@/pages/Admin';
-import About from '@/pages/About';
-import Privacy from '@/pages/Privacy';
+
+const FindDupes = lazy(() => import('@/pages/FindDupes'));
+const Saved = lazy(() => import('@/pages/Saved'));
+const Profile = lazy(() => import('@/pages/Profile'));
+const Styleboards = lazy(() => import('@/pages/Styleboards'));
+const StyleboardBuilder = lazy(() => import('@/pages/StyleboardBuilder'));
+const Admin = lazy(() => import('@/pages/Admin'));
+const About = lazy(() => import('@/pages/About'));
+const Privacy = lazy(() => import('@/pages/Privacy'));
+
+const PageFallback = () => (
+  <div className="fixed inset-0 flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+  </div>
+);
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -55,18 +62,20 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<ErrorBoundary><Feed /></ErrorBoundary>} />
-        <Route path="/find-dupes" element={<ErrorBoundary><FindDupes /></ErrorBoundary>} />
-        <Route path="/saved" element={<ErrorBoundary><Saved /></ErrorBoundary>} />
-        <Route path="/styleboards" element={<ErrorBoundary><Styleboards /></ErrorBoundary>} />
-        <Route path="/profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
-      </Route>
-      <Route path="/styleboards/:id" element={<ErrorBoundary><StyleboardBuilder /></ErrorBoundary>} />
-      <Route path="/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<ErrorBoundary><Feed /></ErrorBoundary>} />
+          <Route path="/find-dupes" element={<ErrorBoundary><FindDupes /></ErrorBoundary>} />
+          <Route path="/saved" element={<ErrorBoundary><Saved /></ErrorBoundary>} />
+          <Route path="/styleboards" element={<ErrorBoundary><Styleboards /></ErrorBoundary>} />
+          <Route path="/profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
+        </Route>
+        <Route path="/styleboards/:id" element={<ErrorBoundary><StyleboardBuilder /></ErrorBoundary>} />
+        <Route path="/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 
@@ -77,11 +86,13 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <Routes>
-            <Route path="/about" element={<About />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="*" element={<AuthenticatedApp />} />
-          </Routes>
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="*" element={<AuthenticatedApp />} />
+            </Routes>
+          </Suspense>
         </Router>
         <Toaster />
       </QueryClientProvider>
