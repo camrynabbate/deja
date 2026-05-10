@@ -2,21 +2,18 @@
 // ClothingItem & DupeSearch are global collections.
 // Styleboard & UserPreference are per-user (stored under users/{uid}/...).
 
-import { db, auth } from '@/lib/firebase';
-import {
-  collection,
-  doc,
-  getDocs,
-  getDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  orderBy,
-  limit as fbLimit,
-  where,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { getDb, auth } from '@/lib/firebase';
+
+let firestorePromise;
+function loadFirestore() {
+  if (!firestorePromise) {
+    firestorePromise = Promise.all([
+      import('firebase/firestore'),
+      getDb(),
+    ]).then(([fs, db]) => ({ fs, db }));
+  }
+  return firestorePromise;
+}
 
 function getUid() {
   return auth.currentUser?.uid || 'anonymous';
@@ -26,24 +23,25 @@ function getUid() {
 // Global collection (shared across all users) — used for ClothingItem, DupeSearch
 // ---------------------------------------------------------------------------
 function createGlobalStore(collectionName) {
-  const col = () => collection(db, collectionName);
-
   return {
     async list(_sortField = '-created_date', max = 100) {
-      const q = query(col(), orderBy('created_date', 'desc'), fbLimit(max));
-      const snap = await getDocs(q);
+      const { fs, db } = await loadFirestore();
+      const q = fs.query(fs.collection(db, collectionName), fs.orderBy('created_date', 'desc'), fs.limit(max));
+      const snap = await fs.getDocs(q);
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
 
     async filter(queryObj) {
-      const constraints = Object.entries(queryObj).map(([k, v]) => where(k, '==', v));
-      const q = query(col(), ...constraints);
-      const snap = await getDocs(q);
+      const { fs, db } = await loadFirestore();
+      const constraints = Object.entries(queryObj).map(([k, v]) => fs.where(k, '==', v));
+      const q = fs.query(fs.collection(db, collectionName), ...constraints);
+      const snap = await fs.getDocs(q);
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
 
     async create(data) {
-      const docRef = await addDoc(col(), {
+      const { fs, db } = await loadFirestore();
+      const docRef = await fs.addDoc(fs.collection(db, collectionName), {
         ...data,
         created_date: new Date().toISOString(),
         created_by: getUid(),
@@ -52,14 +50,16 @@ function createGlobalStore(collectionName) {
     },
 
     async update(id, data) {
-      const ref = doc(db, collectionName, id);
-      await updateDoc(ref, { ...data, updated_date: new Date().toISOString() });
-      const snap = await getDoc(ref);
+      const { fs, db } = await loadFirestore();
+      const ref = fs.doc(db, collectionName, id);
+      await fs.updateDoc(ref, { ...data, updated_date: new Date().toISOString() });
+      const snap = await fs.getDoc(ref);
       return { id: snap.id, ...snap.data() };
     },
 
     async delete(id) {
-      await deleteDoc(doc(db, collectionName, id));
+      const { fs, db } = await loadFirestore();
+      await fs.deleteDoc(fs.doc(db, collectionName, id));
     },
   };
 }
@@ -68,31 +68,36 @@ function createGlobalStore(collectionName) {
 // Per-user collection (scoped to users/{uid}/...) — used for Styleboard, UserPreference
 // ---------------------------------------------------------------------------
 function createUserStore(subCollection) {
-  const col = () => collection(db, 'users', getUid(), subCollection);
-
   return {
     async list(_sortField = '-created_date', max = 500) {
-      const q = query(col(), orderBy('created_date', 'desc'), fbLimit(max));
-      const snap = await getDocs(q);
+      const { fs, db } = await loadFirestore();
+      const q = fs.query(
+        fs.collection(db, 'users', getUid(), subCollection),
+        fs.orderBy('created_date', 'desc'),
+        fs.limit(max),
+      );
+      const snap = await fs.getDocs(q);
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
 
     async filter(queryObj) {
+      const { fs, db } = await loadFirestore();
       // For user stores, 'id' filter needs special handling
       if (queryObj.id) {
-        const ref = doc(db, 'users', getUid(), subCollection, queryObj.id);
-        const snap = await getDoc(ref);
+        const ref = fs.doc(db, 'users', getUid(), subCollection, queryObj.id);
+        const snap = await fs.getDoc(ref);
         if (!snap.exists()) return [];
         return [{ id: snap.id, ...snap.data() }];
       }
-      const constraints = Object.entries(queryObj).map(([k, v]) => where(k, '==', v));
-      const q = query(col(), ...constraints);
-      const snap = await getDocs(q);
+      const constraints = Object.entries(queryObj).map(([k, v]) => fs.where(k, '==', v));
+      const q = fs.query(fs.collection(db, 'users', getUid(), subCollection), ...constraints);
+      const snap = await fs.getDocs(q);
       return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     },
 
     async create(data) {
-      const docRef = await addDoc(col(), {
+      const { fs, db } = await loadFirestore();
+      const docRef = await fs.addDoc(fs.collection(db, 'users', getUid(), subCollection), {
         ...data,
         created_date: new Date().toISOString(),
         created_by: getUid(),
@@ -101,14 +106,16 @@ function createUserStore(subCollection) {
     },
 
     async update(id, data) {
-      const ref = doc(db, 'users', getUid(), subCollection, id);
-      await updateDoc(ref, { ...data, updated_date: new Date().toISOString() });
-      const snap = await getDoc(ref);
+      const { fs, db } = await loadFirestore();
+      const ref = fs.doc(db, 'users', getUid(), subCollection, id);
+      await fs.updateDoc(ref, { ...data, updated_date: new Date().toISOString() });
+      const snap = await fs.getDoc(ref);
       return { id: snap.id, ...snap.data() };
     },
 
     async delete(id) {
-      await deleteDoc(doc(db, 'users', getUid(), subCollection, id));
+      const { fs, db } = await loadFirestore();
+      await fs.deleteDoc(fs.doc(db, 'users', getUid(), subCollection, id));
     },
   };
 }

@@ -1,7 +1,5 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
-import { getAnalytics } from 'firebase/analytics';
-import { getFirestore } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
 
 const firebaseConfig = {
@@ -20,5 +18,14 @@ export const auth = Capacitor.isNativePlatform()
   ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
   : getAuth(app);
 
-export const db = getFirestore(app);
-export const analytics = Capacitor.isNativePlatform() ? null : getAnalytics(app);
+let dbPromise;
+export function getDb() {
+  if (!dbPromise) {
+    dbPromise = import('firebase/firestore').then(({ getFirestore }) => getFirestore(app));
+  }
+  return dbPromise;
+}
+
+if (!Capacitor.isNativePlatform() && typeof window !== 'undefined') {
+  import('firebase/analytics').then(({ getAnalytics }) => getAnalytics(app)).catch(() => {});
+}
