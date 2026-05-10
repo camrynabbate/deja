@@ -2,7 +2,10 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Capacitor } from '@capacitor/core'
 import App from '@/App.jsx'
+import { initStatusBar } from '@/lib/native'
 import '@/index.css'
+
+initStatusBar()
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN
 if (sentryDsn && import.meta.env.PROD) {

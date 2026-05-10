@@ -2,6 +2,14 @@ import { Capacitor } from '@capacitor/core';
 
 const isNative = () => Capacitor.isNativePlatform();
 
+export async function initStatusBar() {
+  if (!isNative()) return;
+  try {
+    const { StatusBar, Style } = await import('@capacitor/status-bar');
+    await StatusBar.setStyle({ style: Style.Dark });
+  } catch {}
+}
+
 export async function hapticLight() {
   if (!isNative()) return;
   try {
