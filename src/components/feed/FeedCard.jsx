@@ -53,8 +53,10 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
       >
         {item.image_url ? (
           <img
-            src={item.image_url}
+            src={`${item.image_url}${item.image_url.includes('?') ? '&' : '?'}width=600`}
             alt={item.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

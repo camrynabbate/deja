@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchFeedItems } from '@/lib/algolia';
 import { Skeleton } from '@/components/ui/skeleton';
 import FeedGrid from '@/components/feed/FeedGrid';
@@ -29,15 +29,48 @@ export default function Feed() {
     setSelectedItem(item);
   };
 
-  const { data: items = [], isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['feedItems', genderPref],
-    queryFn: () => fetchFeedItems({ hitsPerPage: 100, gender: genderPref }),
+    queryFn: () => fetchFeedItems({ hitsPerPage: 30, gender: genderPref }),
+    getNextPageParam: (_last, allPages) => allPages.length,
+    initialPageParam: 0,
     staleTime: 5 * 60 * 1000,
-    placeholderData: (prev) => prev, // keep showing old data while refetching
+    placeholderData: (prev) => prev,
   });
 
+  const items = useMemo(() => {
+    const all = data?.pages.flat() || [];
+    const seen = new Set();
+    return all.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }, [data]);
+
+  const sentinelRef = useRef(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '600px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fetchNextPage, isFetchingNextPage]);
+
   const { pullDistance, isPulling } = usePullToRefresh(() => {
-    queryClient.invalidateQueries({ queryKey: ['feedItems'] });
+    queryClient.resetQueries({ queryKey: ['feedItems'] });
     queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
   });
 
@@ -141,15 +174,22 @@ export default function Feed() {
           <p className="text-sm text-muted-foreground mt-2">Items will appear as they're added to the collection</p>
         </div>
       ) : (
-        <FeedGrid
-          items={displayedItems}
-          likedIds={likedIds}
-          savedIds={savedIds}
-          onLike={(item) => recordPreference(item, 'like')}
-          onDislike={(item) => recordPreference(item, 'dislike')}
-          onSave={(item) => recordPreference(item, 'save')}
-          onOpen={handleOpenItem}
-        />
+        <>
+          <FeedGrid
+            items={displayedItems}
+            likedIds={likedIds}
+            savedIds={savedIds}
+            onLike={(item) => recordPreference(item, 'like')}
+            onDislike={(item) => recordPreference(item, 'dislike')}
+            onSave={(item) => recordPreference(item, 'save')}
+            onOpen={handleOpenItem}
+          />
+          <div ref={sentinelRef} className="h-12 flex items-center justify-center mt-4">
+            {isFetchingNextPage && (
+              <span className="text-xs text-muted-foreground">Loading more…</span>
+            )}
+          </div>
+        </>
       )}
 
       <ItemDetailModal
