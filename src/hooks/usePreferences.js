@@ -82,6 +82,12 @@ export default function usePreferences() {
       style_tags: item.style_tags || [],
       category: item.category || '',
       price_tier: item.price_tier || '',
+      title: item.title || '',
+      brand: item.brand || '',
+      image_url: item.image_url || '',
+      price: item.price ?? null,
+      color: item.color || '',
+      source_url: item.source_url || '',
     });
   }, [createPref, likedIds, savedIds, dislikedIds]);
 

@@ -1,22 +1,37 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Skeleton } from '@/components/ui/skeleton';
 import FeedGrid from '@/components/feed/FeedGrid';
 import usePreferences from '@/hooks/usePreferences';
 import { Bookmark, Heart } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
+function prefToItem(p) {
+  return {
+    id: p.item_id,
+    title: p.title || '',
+    brand: p.brand || '',
+    image_url: p.image_url || '',
+    price: p.price ?? undefined,
+    color: p.color || '',
+    source_url: p.source_url || '',
+    style_tags: p.style_tags || [],
+    category: p.category || '',
+    price_tier: p.price_tier || '',
+  };
+}
+
 export default function Saved() {
-  const { likedIds, savedIds, recordPreference } = usePreferences();
+  const { preferences, likedIds, savedIds, recordPreference } = usePreferences();
+  const isLoading = false;
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: ['clothingItems'],
-    queryFn: () => base44.entities.ClothingItem.list('-created_date', 200),
-  });
-
-  const savedItems = useMemo(() => items.filter(item => savedIds.has(item.id)), [items, savedIds]);
-  const likedItems = useMemo(() => items.filter(item => likedIds.has(item.id)), [items, likedIds]);
+  const savedItems = useMemo(
+    () => preferences.filter(p => p.action === 'save' && p.image_url).map(prefToItem),
+    [preferences],
+  );
+  const likedItems = useMemo(
+    () => preferences.filter(p => p.action === 'like' && p.image_url).map(prefToItem),
+    [preferences],
+  );
 
   const EmptyState = ({ icon: Icon, text }) => (
     <div className="text-center py-20">
