@@ -40,7 +40,7 @@ export function BottomSheet({ open, onClose, title, children, className }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] bg-black/40 lg:hidden"
+            className="fixed inset-0 z-[60] bg-black/40"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -56,7 +56,7 @@ export function BottomSheet({ open, onClose, title, children, className }) {
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className={cn(
-              "fixed bottom-0 left-0 right-0 z-[61] bg-card rounded-t-2xl shadow-2xl lg:hidden",
+              "fixed bottom-0 left-0 right-0 z-[61] bg-card rounded-t-2xl shadow-2xl lg:left-1/2 lg:right-auto lg:max-w-md lg:w-full lg:-ml-[14rem] lg:rounded-2xl lg:bottom-8",
               className
             )}
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}

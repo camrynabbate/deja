@@ -93,7 +93,9 @@ export default function Feed() {
       }
       if (filters.color) {
         const itemColor = (item.color || '').toLowerCase();
-        if (!itemColor.includes(filters.color)) return false;
+        const itemColors = (item.colors || []).map((c) => String(c).toLowerCase());
+        const hit = itemColors.includes(filters.color) || itemColor.includes(filters.color);
+        if (!hit) return false;
       }
       return true;
     });
