@@ -18,6 +18,7 @@ const StyleboardBuilder = lazy(() => import('@/pages/StyleboardBuilder'));
 const Admin = lazy(() => import('@/pages/Admin'));
 const About = lazy(() => import('@/pages/About'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
+const Support = lazy(() => import('@/pages/Support'));
 
 const PageFallback = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -95,6 +96,7 @@ function App() {
             <Routes>
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/support" element={<Support />} />
               <Route path="*" element={<AuthenticatedApp />} />
             </Routes>
           </Suspense>
