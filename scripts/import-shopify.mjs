@@ -263,9 +263,9 @@ async function configureAlgoliaIndex() {
     indexName: INDEX_NAME,
     indexSettings: {
       searchableAttributes: [
+        'brand',
         'title',
         'unordered(color,colors)',
-        'brand',
         'category',
         'description',
         'material',
