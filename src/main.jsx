@@ -39,6 +39,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 if (!Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
   import('virtual:pwa-register').then(({ registerSW }) => {
-    registerSW({ immediate: true })
+    const updateSW = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        updateSW(true)
+      },
+    })
   })
 }
