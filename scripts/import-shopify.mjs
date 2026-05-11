@@ -97,6 +97,9 @@ const BRAND_GENDER_DEFAULTS = {
   'STAUD': 'womens',
   'RIXO': 'womens',
   'Girlfriend Collective': 'womens',
+  'Set Active': 'womens',
+  'Princess Polly': 'womens',
+  'Alo Yoga': 'unisex',
 };
 
 function inferGender(product, brandName) {
