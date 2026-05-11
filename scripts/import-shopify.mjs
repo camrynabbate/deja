@@ -37,6 +37,10 @@ const BRANDS = [
   { domain: 'khaite.com', name: 'Khaite' },
   { domain: 'staud.clothing', name: 'STAUD' },
   { domain: 'rixo.co.uk', name: 'RIXO' },
+  // Mass-market expansion
+  { domain: 'setactive.co', name: 'Set Active' },
+  { domain: 'aloyoga.com', name: 'Alo Yoga' },
+  { domain: 'us.princesspolly.com', name: 'Princess Polly' },
 ];
 
 const STYLE_TAGS = ['minimalist', 'casual', 'elegant', 'bohemian', 'streetwear', 'trendy', 'cozy', 'classic', 'preppy', 'edgy', 'romantic', 'sporty'];

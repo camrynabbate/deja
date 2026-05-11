@@ -86,6 +86,7 @@ const ALL_BRANDS = [
   'Stoney Clover Lane', 'LoveShackFancy', 'Spell', 'We Wore What',
   'Solid & Striped', 'Beach Riot', 'Showpo', 'Mother Denim', 'AGOLDE',
   'Khaite', 'STAUD', 'RIXO',
+  'Set Active', 'Alo Yoga', 'Princess Polly',
 ];
 
 function genderFilter(gender) {
