@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -18,7 +18,7 @@ export default function StyleboardBuilder() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const canvasRef = useRef(null);
-  const { savedIds, likedIds } = usePreferences();
+  const { preferences } = usePreferences();
 
   const { data: board, isLoading: boardLoading } = useQuery({
     queryKey: ['styleboard', id],
@@ -26,10 +26,29 @@ export default function StyleboardBuilder() {
     select: (data) => data[0],
   });
 
-  const { data: allItems = [] } = useQuery({
-    queryKey: ['clothingItems'],
-    queryFn: () => base44.entities.ClothingItem.list('-created_date', 200),
-  });
+  const allItems = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    for (const p of preferences) {
+      if (p.action !== 'save' && p.action !== 'like') continue;
+      if (!p.image_url) continue;
+      if (seen.has(p.item_id)) continue;
+      seen.add(p.item_id);
+      out.push({
+        id: p.item_id,
+        title: p.title || '',
+        brand: p.brand || '',
+        image_url: p.image_url || '',
+        price: p.price ?? undefined,
+        color: p.color || '',
+        source_url: p.source_url || '',
+        style_tags: p.style_tags || [],
+        category: p.category || '',
+        price_tier: p.price_tier || '',
+      });
+    }
+    return out;
+  }, [preferences]);
 
   const { user } = useAuth();
 
@@ -130,7 +149,7 @@ export default function StyleboardBuilder() {
   }, []);
 
   // Items available in panel (saved + liked)
-  const panelItems = allItems.filter(item => savedIds.has(item.id) || likedIds.has(item.id));
+  const panelItems = allItems;
 
   if (boardLoading) {
     return (
