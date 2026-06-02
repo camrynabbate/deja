@@ -18,12 +18,14 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
   const [addToBoardOpen, setAddToBoardOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const { data: boards = [] } = useQuery({
-    queryKey: ['styleboards', 'mine'],
-    queryFn: () => base44.entities.Styleboard.list('-created_date', 50),
-  });
-
   const { user } = useAuth();
+  const uid = user?.uid;
+
+  const { data: boards = [] } = useQuery({
+    queryKey: ['styleboards', 'mine', uid],
+    queryFn: () => base44.entities.Styleboard.list('-created_date', 50),
+    enabled: !!uid,
+  });
 
   const similarItems = useMemo(() => {
     if (!item || !allItems?.length) return [];

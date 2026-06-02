@@ -1,16 +1,27 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hapticLight, hapticMedium } from '@/lib/native';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function usePreferences() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const uid = user?.uid;
 
-  const { data: preferences = [] } = useQuery({
-    queryKey: ['userPreferences'],
+  // Key the cache by uid so switching accounts can't show stale prefs from a
+  // previous user, and gate on `enabled` so we never query before auth resolves
+  // (otherwise getUid() falls back to 'anonymous' and returns nothing).
+  const { data: preferences = [], error: prefsError } = useQuery({
+    queryKey: ['userPreferences', uid],
     queryFn: () => base44.entities.UserPreference.list('-created_date', 500),
     staleTime: 2 * 60 * 1000,
+    enabled: !!uid,
   });
+
+  useEffect(() => {
+    if (prefsError) console.error('[usePreferences] load failed:', prefsError);
+  }, [prefsError]);
 
   const createPref = useMutation({
     mutationFn: (data) => base44.entities.UserPreference.create(data),

@@ -31,12 +31,18 @@ export default function Styleboards() {
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
 
-  const { data: boards = [], isLoading } = useQuery({
-    queryKey: ['styleboards', 'mine'],
+  const { user } = useAuth();
+  const uid = user?.uid;
+
+  const { data: boards = [], isLoading, error: boardsError } = useQuery({
+    queryKey: ['styleboards', 'mine', uid],
     queryFn: () => base44.entities.Styleboard.list('-created_date', 50),
+    enabled: !!uid,
   });
 
-  const { user } = useAuth();
+  useEffect(() => {
+    if (boardsError) console.error('[Styleboards] load failed:', boardsError);
+  }, [boardsError]);
 
   const createBoard = useMutation({
     mutationFn: (data) => base44.entities.Styleboard.create(data),
