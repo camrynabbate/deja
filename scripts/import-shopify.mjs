@@ -45,17 +45,22 @@ const BRANDS = [
 
 const STYLE_TAGS = ['minimalist', 'casual', 'elegant', 'bohemian', 'streetwear', 'trendy', 'cozy', 'classic', 'preppy', 'edgy', 'romantic', 'sporty'];
 
+// Order matters — first match wins. Dresses/outerwear must beat bottoms/tops
+// (a "shirt dress" is a dress; a "jacket" is outerwear even if it has a "top" tag).
+// Accessories runs LAST because its keywords (tie, belt, cap, etc.) are common
+// modifiers in garment titles ("Tie Waist Trouser", "Belt Pant", "Cap Sleeve Top").
 const CATEGORY_KEYWORDS = [
-  ['dresses', /\b(dress|gown|jumpsuit)\b/i],
-  ['outerwear', /\b(jacket|coat|blazer|outerwear|parka|trench|puffer)\b/i],
-  ['bottoms', /\b(pants?|jeans?|shorts|skirt|trouser|legging|joggers?)\b/i],
-  ['shoes', /\b(shoe|sneaker|boot|sandal|heel|loafer|flat)\b/i],
-  ['bags', /\b(bag|tote|clutch|backpack|crossbody|handbag|purse)\b/i],
-  ['accessories', /\b(belt|hat|scarf|jewelry|earring|necklace|bracelet|sunglass)\b/i],
-  ['activewear', /\b(active|sport|workout|gym|yoga|run)\b/i],
-  ['swimwear', /\b(swim|bikini|swimsuit|swimwear)\b/i],
-  ['tops', /\b(top|tee|t-shirt|shirt|blouse|sweater|hoodie|cardigan|tank)\b/i],
+  ['dresses', /\b(dress(es)?|shirt[- ]?dress(es)?|sundress(es)?|t[- ]?shirt[- ]?dress(es)?|gowns?|jumpsuits?|rompers?|playsuits?)\b/i],
+  ['outerwear', /\b(jackets?|coats?|blazers?|outerwear|parkas?|trench(es)?|puffers?|vests?|anoraks?|windbreakers?)\b/i],
+  ['shoes', /\b(shoes?|sneakers?|boots?|sandals?|heels?|loafers?|flats?|pumps?|mules?|clogs?|slippers?|trainers?)\b/i],
+  ['bags', /\b(bags?|totes?|clutch(es)?|backpacks?|crossbody|handbags?|purses?|satchels?|pouch(es)?|wallets?)\b/i],
+  ['bottoms', /\b(pants?|jeans?|shorts?|skirts?|skorts?|trousers?|leggings?|joggers?|sweatpants?|chinos?|culottes?|denim|slacks?|bottoms?)\b/i],
+  ['tops', /\b(tops?|tees?|t-?shirts?|shirts?|blouses?|sweaters?|hoodies?|cardigans?|tanks?|camis?|camisoles?|bodysuits?|polos?|henleys?|turtlenecks?|sweatshirts?|button[- ]?(up|down)|bras?|bralettes?)\b/i],
+  ['accessories', /\b(belts?|hats?|caps?|beanies?|scarves?|scarf|gloves?|jewelry|earrings?|necklaces?|bracelets?|sunglasses?|rings?|watches?|ties?|socks?|hair clip)\b/i],
 ];
+
+const ACTIVEWEAR_RE = /\b(active|sports?|workouts?|gym|yoga|athleisure|athletic|track|running|fitness|train)\b/i;
+const SWIMWEAR_RE = /\b(swim|bikinis?|swimsuits?|swimwear|rash ?guard|surf)\b/i;
 
 function priceToTier(price) {
   if (!price) return 'mid_range';
@@ -65,12 +70,20 @@ function priceToTier(price) {
   return 'luxury';
 }
 
-function inferCategory(productType, tags, title) {
+export function inferCategory(productType, tags, title) {
   const haystack = `${productType || ''} ${(tags || []).join(' ')} ${title || ''}`.toLowerCase();
   for (const [category, regex] of CATEGORY_KEYWORDS) {
     if (regex.test(haystack)) return category;
   }
   return 'tops';
+}
+
+export function inferContext({ productType, tags, title, brand }) {
+  const haystack = `${productType || ''} ${(tags || []).join(' ')} ${title || ''} ${brand || ''}`.toLowerCase();
+  return {
+    is_activewear: ACTIVEWEAR_RE.test(haystack),
+    is_swimwear: SWIMWEAR_RE.test(haystack),
+  };
 }
 
 // Default gender for brands that are explicitly women-only or men-only.
@@ -196,6 +209,7 @@ function transformProduct(brand, p) {
     image_url: image,
     source_url: sourceUrl,
     category: inferCategory(p.product_type, p.tags, p.title),
+    ...inferContext({ productType: p.product_type, tags: p.tags, title: p.title, brand: brand.name }),
     gender: inferGender(p, brand.name),
     likes_count: 0,
     shopify_id: p.id,
@@ -278,6 +292,8 @@ async function configureAlgoliaIndex() {
         'filterOnly(style_tags)',
         'filterOnly(color)',
         'filterOnly(gender)',
+        'filterOnly(is_activewear)',
+        'filterOnly(is_swimwear)',
       ],
       customRanking: ['desc(likes_count)'],
       paginationLimitedTo: 30000,
@@ -317,4 +333,6 @@ async function main() {
   process.exit(0);
 }
 
-main();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

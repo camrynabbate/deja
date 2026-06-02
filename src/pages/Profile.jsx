@@ -77,7 +77,7 @@ export default function Profile() {
 
   const categoryLabels = {
     tops: 'Tops', bottoms: 'Bottoms', dresses: 'Dresses', outerwear: 'Outerwear',
-    shoes: 'Shoes', bags: 'Bags', accessories: 'Accessories', activewear: 'Activewear', swimwear: 'Swimwear',
+    shoes: 'Shoes', bags: 'Bags', accessories: 'Accessories',
   };
 
   return (

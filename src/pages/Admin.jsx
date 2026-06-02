@@ -3,10 +3,24 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, CheckCircle2, AlertCircle, Database, Plus, Trash2, ExternalLink, Image, Upload, Pencil, X } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Database, Plus, Trash2, ExternalLink, Image, Upload, Pencil, X, Wand2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-const CATEGORIES = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'bags', 'accessories', 'activewear', 'swimwear'];
+const CATEGORIES = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'bags', 'accessories'];
+
+// Order matters — dresses/outerwear must beat tops/bottoms, and accessories
+// runs last because "tie/belt/cap" appear as modifiers in many garment titles.
+function inferCategory(title) {
+  const t = (title || '').toLowerCase();
+  if (/\b(dress(es)?|shirt[- ]?dress(es)?|sundress(es)?|t[- ]?shirt[- ]?dress(es)?|gowns?|frocks?|rompers?|jumpsuits?|playsuits?)\b/.test(t)) return 'dresses';
+  if (/\b(jacket|coat|blazer|parka|trench|puffer|vest|anorak|windbreaker)\b/.test(t)) return 'outerwear';
+  if (/\b(shoes?|sneakers?|boots?|heels?|sandals?|loafers?|flats?|pumps?|mules?|clogs?|slippers?|trainers?)\b/.test(t)) return 'shoes';
+  if (/\b(bag|tote|purse|backpack|clutch|handbag|crossbody|satchel|pouch|wallet)\b/.test(t)) return 'bags';
+  if (/\b(jeans?|pants?|trousers?|skirts?|skorts?|shorts?|chinos?|slacks?|joggers?|sweatpants?|culottes?|denim|leggings?|bottoms?)\b/.test(t)) return 'bottoms';
+  if (/\b(tops?|shirts?|blouses?|tees?|t-?shirts?|sweaters?|knits?|pullovers?|tanks?|camis?|camisoles?|bodysuits?|polos?|henleys?|turtlenecks?|cardigans?|hoodies?|sweatshirts?|button[- ]?(up|down)|bras?|bralettes?)\b/.test(t)) return 'tops';
+  if (/\b(belts?|hats?|caps?|beanies?|scarves?|scarf|gloves?|sunglasses?|jewelry|necklaces?|earrings?|rings?|bracelets?|watches?|ties?|socks?|hair clip)\b/.test(t)) return 'accessories';
+  return 'tops';
+}
 const PRICE_TIERS = ['budget', 'mid_range', 'premium', 'luxury'];
 const STYLE_TAGS = ['minimalist', 'casual', 'elegant', 'bohemian', 'streetwear', 'trendy', 'cozy', 'classic', 'preppy', 'edgy', 'romantic', 'sporty'];
 
@@ -261,7 +275,7 @@ export default function Admin() {
           price_tier: priceTier,
           source_url: sourceUrl || '',
           image_url: imageUrl || '',
-          category: 'tops',
+          category: inferCategory(title),
           color: '',
           material: '',
           style_tags: [],
@@ -279,6 +293,43 @@ export default function Admin() {
     setBulkMessage(`Added ${added} product${added !== 1 ? 's' : ''}${errors > 0 ? `, ${errors} failed` : ''}.`);
     if (added > 0) setBulkText('');
     setTimeout(() => setBulkStatus(null), 5000);
+  };
+
+  const [reclassifyStatus, setReclassifyStatus] = useState(null);
+  const [reclassifyMessage, setReclassifyMessage] = useState('');
+
+  const handleReclassify = async () => {
+    const candidates = items
+      .map(it => ({ it, next: inferCategory(it.title) }))
+      .filter(({ it, next }) => next !== it.category);
+
+    if (candidates.length === 0) {
+      setReclassifyStatus('success');
+      setReclassifyMessage('All items already categorized correctly.');
+      setTimeout(() => setReclassifyStatus(null), 4000);
+      return;
+    }
+
+    const ok = window.confirm(
+      `Re-categorize ${candidates.length} item${candidates.length !== 1 ? 's' : ''} based on their titles? This updates the database.`
+    );
+    if (!ok) return;
+
+    setReclassifyStatus('loading');
+    let updated = 0;
+    let errors = 0;
+    for (const { it, next } of candidates) {
+      try {
+        await base44.entities.ClothingItem.update(it.id, { category: next });
+        updated++;
+      } catch {
+        errors++;
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ['clothingItems'] });
+    setReclassifyStatus('success');
+    setReclassifyMessage(`Reclassified ${updated} item${updated !== 1 ? 's' : ''}${errors > 0 ? `, ${errors} failed` : ''}.`);
+    setTimeout(() => setReclassifyStatus(null), 5000);
   };
 
   return (
@@ -521,9 +572,27 @@ export default function Admin() {
 
       {/* Current Products */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="font-medium text-foreground text-lg">Current Products ({items.length})</h2>
+          <Button
+            onClick={handleReclassify}
+            disabled={reclassifyStatus === 'loading' || items.length === 0}
+            variant="outline"
+            size="sm"
+            className="gap-2 shrink-0"
+          >
+            {reclassifyStatus === 'loading' ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Reclassifying...</>
+            ) : (
+              <><Wand2 className="w-4 h-4" /> Reclassify by title</>
+            )}
+          </Button>
         </div>
+        {reclassifyStatus === 'success' && (
+          <div className="flex items-center gap-2 text-sm text-green-600">
+            <CheckCircle2 className="w-4 h-4" /> {reclassifyMessage}
+          </div>
+        )}
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
