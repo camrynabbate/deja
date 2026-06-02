@@ -6,7 +6,7 @@ const algolia = algoliasearch(process.env.ALGOLIA_APP_ID, process.env.ALGOLIA_WR
 let cursor;
 const counts = new Map();
 const domains = new Map();
-// eslint-disable-next-line no-constant-condition
+ 
 while (true) {
   const res = await algolia.browse({
     indexName: 'clothing_items',

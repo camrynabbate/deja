@@ -17,7 +17,7 @@ async function fetchAll() {
   const all = [];
   let cursor;
   // browse iterates the entire index without the 1000-hit search cap.
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     const res = await algolia.browse({
       indexName: INDEX,

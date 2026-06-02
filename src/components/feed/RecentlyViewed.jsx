@@ -1,5 +1,4 @@
 import { Heart } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export default function RecentlyViewed({ items, likedIds, onOpen }) {
   if (!items || items.length === 0) return null;

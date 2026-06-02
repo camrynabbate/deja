@@ -5,9 +5,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { BottomSheet, BottomSheetItem } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/button';
-import { Heart, Bookmark, ExternalLink, X, Layout, ChevronRight, Share2 } from 'lucide-react';
+import { Heart, Bookmark, ExternalLink, Layout, ChevronRight, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
 import { shareItem, hapticLight } from '@/lib/native';
 
 function useIsMobile() {

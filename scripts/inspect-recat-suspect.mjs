@@ -12,7 +12,7 @@ const TITLE_HAS_GARMENT_WORD = /\b(dress(es)?|shirt[- ]?dress(es)?|sundress(es)?
 
 let cursor;
 let printed = 0;
-// eslint-disable-next-line no-constant-condition
+ 
 while (printed < 15) {
   const res = await algolia.browse({
     indexName: INDEX,

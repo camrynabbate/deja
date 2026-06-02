@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { BottomSheet, BottomSheetItem } from '@/components/ui/BottomSheet';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { cn } from '@/lib/utils';
 
 const BACKGROUNDS = [
