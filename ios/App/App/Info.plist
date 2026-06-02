@@ -43,7 +43,9 @@
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
+	<false/>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDarkContent</string>
 	<key>NSCameraUsageDescription</key>
 	<string>déjà uses your camera to find similar items based on photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
