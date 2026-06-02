@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchFeedItems } from '@/lib/algolia';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,21 +53,39 @@ export default function Feed() {
     });
   }, [data]);
 
-  const sentinelRef = useRef(null);
-  useEffect(() => {
-    const node = sentinelRef.current;
+  // Find the actual scroll container. AppLayout uses <main className="...overflow-y-auto">
+  // so window scroll listeners never fire — we need to listen on whatever
+  // ancestor is doing the scrolling.
+  const [scrollRoot, setScrollRoot] = useState(null);
+  const sentinelRef = useCallback((node) => {
     if (!node) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { rootMargin: '600px' }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [fetchNextPage, isFetchingNextPage]);
+    let root = node.parentElement;
+    while (root && root !== document.body) {
+      const style = window.getComputedStyle(root);
+      if (/(auto|scroll)/.test(style.overflowY)) break;
+      root = root.parentElement;
+    }
+    setScrollRoot(root && root !== document.body ? root : window);
+  }, []);
+
+  useEffect(() => {
+    if (!scrollRoot) return;
+    const handler = () => {
+      if (isFetchingNextPage) return;
+      const isWindow = scrollRoot === window;
+      const scrollTop = isWindow ? window.scrollY : scrollRoot.scrollTop;
+      const clientHeight = isWindow ? window.innerHeight : scrollRoot.clientHeight;
+      const scrollHeight = isWindow
+        ? document.documentElement.scrollHeight
+        : scrollRoot.scrollHeight;
+      const remaining = scrollHeight - scrollTop - clientHeight;
+      if (remaining < 800) fetchNextPage();
+    };
+    scrollRoot.addEventListener('scroll', handler, { passive: true });
+    // Run once in case the initial page doesn't fill the viewport.
+    handler();
+    return () => scrollRoot.removeEventListener('scroll', handler);
+  }, [scrollRoot, fetchNextPage, isFetchingNextPage]);
 
   const { pullDistance, isPulling } = usePullToRefresh(() => {
     queryClient.resetQueries({ queryKey: ['feedItems'] });
