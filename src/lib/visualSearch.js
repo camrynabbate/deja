@@ -1,16 +1,7 @@
 import { Capacitor } from '@capacitor/core';
+import { getAuth } from 'firebase/auth';
 
-const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY;
-const MODEL = 'claude-haiku-4-5';
-
-const PROMPT = `You are tagging a clothing or accessory item for a fashion search engine.
-Output a single search query (5-15 words) describing the item.
-Include in this order: garment type, primary color, material if visible, key style features.
-Examples:
-- "black leather crossbody bag with gold chain minimalist"
-- "white linen midi dress short sleeves casual"
-- "navy cashmere crewneck sweater classic"
-Output ONLY the description text, no preamble, no quotes.`;
+const VISUAL_SEARCH_URL = import.meta.env.VITE_VISUAL_SEARCH_URL;
 
 export async function pickImage() {
   if (Capacitor.isNativePlatform()) {
@@ -52,35 +43,22 @@ export async function pickImage() {
 }
 
 export async function describeImage({ base64, mimeType }) {
-  if (!ANTHROPIC_KEY) throw new Error('Anthropic API key not configured');
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  if (!VISUAL_SEARCH_URL) throw new Error('Visual search URL not configured');
+  const user = getAuth().currentUser;
+  if (!user) throw new Error('Sign in to use visual search');
+  const token = await user.getIdToken();
+
+  const response = await fetch(VISUAL_SEARCH_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 80,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mimeType, data: base64 },
-            },
-            { type: 'text', text: PROMPT },
-          ],
-        },
-      ],
-    }),
+    body: JSON.stringify({ base64, mimeType }),
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error?.message || `Vision API error (${response.status})`);
+    throw new Error(data.error || `Vision API error (${response.status})`);
   }
-  return (data.content?.[0]?.text || '').trim();
+  return (data.text || '').trim();
 }

@@ -42,3 +42,4 @@ ios/DerivedData/
 ios/**/xcuserdata/
 ios/**/*.xcuserstate
 ios/App/App/public/
+.vercel
