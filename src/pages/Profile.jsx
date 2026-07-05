@@ -1,23 +1,21 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { auth } from '@/lib/firebase';
 import usePreferences from '@/hooks/usePreferences';
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Bookmark, Search, TrendingUp, LogOut, Trash2, UserX } from 'lucide-react';
+import { Heart, Bookmark, TrendingUp, LogOut, Trash2, UserX } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 async function wipeUserData() {
-  const prefs = await base44.entities.UserPreference.list('-created_date', 1000);
-  for (const p of prefs) await base44.entities.UserPreference.delete(p.id);
-  const boards = await base44.entities.Styleboard.list('-created_date', 1000);
-  for (const b of boards) await base44.entities.Styleboard.delete(b.id);
-  const dupes = await base44.entities.DupeSearch.list('-created_date', 1000);
-  for (const s of dupes) await base44.entities.DupeSearch.delete(s.id);
+  await Promise.all([
+    base44.entities.UserPreference.deleteAll(),
+    base44.entities.Styleboard.deleteAll(),
+  ]);
 }
 
 export default function Profile() {
@@ -49,11 +47,6 @@ export default function Profile() {
     }
   };
 
-  const { data: searches = [] } = useQuery({
-    queryKey: ['dupeSearches'],
-    queryFn: () => base44.entities.DupeSearch.list('-created_date', 50),
-  });
-
   const topStyles = useMemo(() => {
     return Object.entries(tasteProfile.tagScores)
       .sort(([, a], [, b]) => b - a)
@@ -71,7 +64,6 @@ export default function Profile() {
   const stats = [
     { icon: Heart, label: 'Liked', value: likedIds.size, color: 'text-accent' },
     { icon: Bookmark, label: 'Saved', value: savedIds.size, color: 'text-foreground' },
-    { icon: Search, label: 'Searches', value: searches.length, color: 'text-muted-foreground' },
     { icon: TrendingUp, label: 'Interactions', value: preferences.length, color: 'text-accent' },
   ];
 
@@ -96,7 +88,7 @@ export default function Profile() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
+      <div className="grid grid-cols-3 gap-3 mb-10">
         {stats.map(({ icon: Icon, label, value, color }) => (
           <Card key={label} className="border-border/50">
             <CardContent className="p-4 text-center">
@@ -192,7 +184,7 @@ export default function Profile() {
           <DialogHeader>
             <DialogTitle className="font-serif text-xl">Clear All Data</DialogTitle>
             <DialogDescription>
-              This will delete all your preferences, saved items, styleboards, and search history from this browser.
+              This will delete all your preferences, saved items, and styleboards from your account.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
@@ -238,7 +230,7 @@ export default function Profile() {
           <DialogHeader>
             <DialogTitle className="font-serif text-xl">Delete Account</DialogTitle>
             <DialogDescription>
-              This permanently deletes your account, all preferences, saved items, styleboards, and search history. This cannot be undone.
+              This permanently deletes your account, all preferences, saved items, and styleboards. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">

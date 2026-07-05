@@ -1,7 +1,7 @@
 import { Toaster } from 'sonner';
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import React, { Suspense, lazy, useEffect } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -25,6 +25,12 @@ const PageFallback = () => (
     <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
   </div>
 );
+
+const AdminRoute = () => {
+  const { user } = useAuth();
+  if (user?.role !== 'admin') return <Navigate to="/" replace />;
+  return <ErrorBoundary><Admin /></ErrorBoundary>;
+};
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -78,7 +84,7 @@ const AuthenticatedApp = () => {
           <Route path="/profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
         </Route>
         <Route path="/styleboards/:id" element={<ErrorBoundary><StyleboardBuilder /></ErrorBoundary>} />
-        <Route path="/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />
+        <Route path="/admin" element={<AdminRoute />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </Suspense>
