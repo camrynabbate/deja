@@ -103,6 +103,7 @@ export default function AppLayout() {
 
       {/* Main content */}
       <main
+        data-app-scroll-container
         className={cn(
           "lg:ml-64 absolute inset-0 overflow-y-auto overscroll-none",
           isChild

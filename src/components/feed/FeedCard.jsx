@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Heart, Bookmark, X, ExternalLink, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -9,7 +9,13 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
   const [showHeart, setShowHeart] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const tapTimer = useRef(null);
+  const heartTimer = useRef(null);
   const tapCount = useRef(0);
+
+  useEffect(() => () => {
+    clearTimeout(tapTimer.current);
+    clearTimeout(heartTimer.current);
+  }, []);
 
   // Single tap → open detail, double tap → like
   const handleTap = () => {
@@ -24,7 +30,8 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
       tapCount.current = 0;
       if (!isLiked) onLike(item);
       setShowHeart(true);
-      setTimeout(() => setShowHeart(false), 800);
+      clearTimeout(heartTimer.current);
+      heartTimer.current = setTimeout(() => setShowHeart(false), 800);
     }
   };
 
@@ -37,7 +44,6 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -48,7 +54,6 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
         role="img"
         aria-label={`${item.title}${item.brand ? ` by ${item.brand}` : ''} — double-tap to like`}
         className="relative aspect-[3/4] overflow-hidden cursor-pointer bg-secondary"
-        onDoubleClick={handleTap}
         onClick={handleTap}
       >
         {item.image_url ? (

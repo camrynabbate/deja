@@ -13,6 +13,7 @@ import usePullToRefresh from '@/hooks/usePullToRefresh';
 import useGenderPreference from '@/hooks/useGenderPreference';
 import { cn } from '@/lib/utils';
 import PullToRefreshIndicator from '@/components/ui/PullToRefreshIndicator';
+import { getNextFeedPageParam } from '@/lib/feedInteractions';
 
 
 export default function Feed() {
@@ -34,10 +35,11 @@ export default function Feed() {
     isLoading,
     fetchNextPage,
     isFetchingNextPage,
+    hasNextPage,
   } = useInfiniteQuery({
     queryKey: ['feedItems', genderPref],
     queryFn: () => fetchFeedItems({ hitsPerPage: 30, gender: genderPref }),
-    getNextPageParam: (_last, allPages) => allPages.length,
+    getNextPageParam: getNextFeedPageParam,
     initialPageParam: 0,
     staleTime: 5 * 60 * 1000,
     placeholderData: (prev) => prev,
@@ -71,7 +73,7 @@ export default function Feed() {
   useEffect(() => {
     if (!scrollRoot) return;
     const handler = () => {
-      if (isFetchingNextPage) return;
+      if (isFetchingNextPage || !hasNextPage) return;
       const isWindow = scrollRoot === window;
       const scrollTop = isWindow ? window.scrollY : scrollRoot.scrollTop;
       const clientHeight = isWindow ? window.innerHeight : scrollRoot.clientHeight;
@@ -85,12 +87,13 @@ export default function Feed() {
     // Run once in case the initial page doesn't fill the viewport.
     handler();
     return () => scrollRoot.removeEventListener('scroll', handler);
-  }, [scrollRoot, fetchNextPage, isFetchingNextPage]);
+  }, [scrollRoot, fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const { pullDistance, isPulling } = usePullToRefresh(() => {
+  const refreshFeed = useCallback(() => {
     queryClient.resetQueries({ queryKey: ['feedItems'] });
     queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
-  });
+  }, [queryClient]);
+  const { pullDistance, isPulling } = usePullToRefresh(refreshFeed, scrollRoot);
 
   const hasPreferences = Object.keys(tasteProfile.tagScores).length > 0;
 
@@ -123,7 +126,7 @@ export default function Feed() {
     return filtered
       .map(item => ({ ...item, _score: scoreItem(item) }))
       .sort((a, b) => b._score - a._score);
-  }, [items, dislikedIds, category, hasPreferences, scoreItem]);
+  }, [items, dislikedIds, category, filters, hasPreferences, scoreItem]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 overscroll-none">
