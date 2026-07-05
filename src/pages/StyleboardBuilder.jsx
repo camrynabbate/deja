@@ -11,6 +11,7 @@ import CanvasItem from '@/components/styleboards/CanvasItem';
 import SavedItemsPanel from '@/components/styleboards/SavedItemsPanel';
 import BackgroundPicker from '@/components/styleboards/BackgroundPicker.jsx';
 import { toast } from 'sonner';
+import { createCanvasItem } from '@/lib/styleboardItems';
 
 export default function StyleboardBuilder() {
   const { id } = useParams();
@@ -108,18 +109,21 @@ export default function StyleboardBuilder() {
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
-    setCanvasItems(prev => [...prev, {
-      item_id: item.id,
-      image_url: item.image_url || '',
-      title: item.title,
-      brand: item.brand || '',
-      price: item.price || 0,
-      x: Math.max(5, Math.min(75, x)),
-      y: Math.max(5, Math.min(75, y)),
-      w: 22,
-      h: 30,
-      z: prev.length,
-    }]);
+    setCanvasItems((previous) => [
+      ...previous,
+      createCanvasItem(item, previous.length, {
+        x: Math.max(5, Math.min(75, x)),
+        y: Math.max(5, Math.min(75, y)),
+      }),
+    ]);
+  }, []);
+
+  const handleAddItem = useCallback((item) => {
+    setCanvasItems((previous) => [
+      ...previous,
+      createCanvasItem(item, previous.length),
+    ]);
+    toast.success('Added to styleboard');
   }, []);
 
   const handleMoveItem = useCallback((index, dx, dy) => {
@@ -180,16 +184,16 @@ export default function StyleboardBuilder() {
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="h-8 text-sm font-medium border-none shadow-none bg-transparent focus-visible:ring-0 px-0 w-48"
+          className="h-8 text-sm font-medium border-none shadow-none bg-transparent focus-visible:ring-0 px-0 flex-1 min-w-0 sm:w-48 sm:flex-none"
           placeholder="Board title"
         />
-        <div className="flex-1" />
+        <div className="hidden sm:block flex-1" />
         <BackgroundPicker value={bgColor} onChange={setBgColor} />
         <button
           onClick={handleToggleShare}
           aria-label={isShared ? 'Make board private' : 'Share board publicly'}
           aria-pressed={isShared}
-          className={`flex items-center gap-1.5 text-xs font-medium px-3 min-h-[44px] rounded-full border transition-all ${
+          className={`hidden sm:flex items-center gap-1.5 text-xs font-medium px-3 min-h-[44px] rounded-full border transition-all ${
             isShared ? 'bg-accent text-accent-foreground border-accent' : 'border-border text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -198,16 +202,16 @@ export default function StyleboardBuilder() {
         </button>
         <Button size="sm" onClick={handleSave} disabled={saveBoard.isPending} className="gap-1.5">
           {saveBoard.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-          Save
+          <span className="hidden sm:inline">Save</span>
         </Button>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         {/* Left panel — saved items */}
-        <SavedItemsPanel items={panelItems} />
+        <SavedItemsPanel items={panelItems} onAdd={handleAddItem} />
 
         {/* Canvas */}
-        <div className="flex-1 overflow-hidden p-4 flex items-center justify-center bg-muted/30">
+        <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4 flex items-center justify-center bg-muted/30">
           <div
             ref={canvasRef}
             className="relative w-full h-full rounded-2xl overflow-hidden shadow-xl"
@@ -219,8 +223,8 @@ export default function StyleboardBuilder() {
             {canvasItems.length === 0 && (
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <div className="border-2 border-dashed border-border/50 rounded-2xl px-12 py-10 text-center">
-                  <p className="font-serif text-xl text-muted-foreground/50 italic">Drag items here</p>
-                  <p className="text-sm text-muted-foreground/40 mt-1">From your saved collection on the left</p>
+                  <p className="font-serif text-xl text-muted-foreground/50 italic">Add items to begin</p>
+                  <p className="text-sm text-muted-foreground/40 mt-1">Tap an item or drag one here</p>
                 </div>
               </div>
             )}

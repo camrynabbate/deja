@@ -88,6 +88,7 @@ export default function CanvasItem({
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       {/* Image */}
       <div className={cn(
@@ -143,13 +144,18 @@ export default function CanvasItem({
       {/* Resize handle */}
       <div
         data-resize
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-0 group-hover/item:opacity-100 transition-opacity"
+        aria-label="Resize item"
+        className={cn(
+          'absolute bottom-0 right-0 w-11 h-11 lg:w-5 lg:h-5 cursor-se-resize transition-opacity flex items-end justify-end p-2 lg:p-0',
+          isSelected ? 'opacity-100' : 'opacity-0 lg:group-hover/item:opacity-100',
+        )}
         style={{ touchAction: 'none' }}
         onPointerDown={handleResizePointerDown}
         onPointerMove={handleResizePointerMove}
         onPointerUp={handleResizePointerUp}
+        onPointerCancel={handleResizePointerUp}
       >
-        <svg viewBox="0 0 16 16" fill="none" className="w-full h-full">
+        <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4 lg:w-full lg:h-full drop-shadow">
           <path d="M14 6 L6 14 M14 10 L10 14" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </div>
