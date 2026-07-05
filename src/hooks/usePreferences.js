@@ -8,6 +8,18 @@ import {
   preferenceChange,
 } from '@/lib/preferenceState';
 
+/** @param {ReturnType<typeof preferenceChange>} change */
+async function persistPreferenceChange(change) {
+  await Promise.all(
+    change.remove
+      .filter((preference) => !String(preference.id).startsWith('optimistic-'))
+      .map((preference) => base44.entities.UserPreference.delete(preference.id)),
+  );
+  if (change.adding) {
+    await base44.entities.UserPreference.create(change.payload);
+  }
+}
+
 export default function usePreferences() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -30,16 +42,7 @@ export default function usePreferences() {
   const preferenceKey = useMemo(() => ['userPreferences', uid], [uid]);
 
   const updatePreference = useMutation({
-    mutationFn: async (change) => {
-      await Promise.all(
-        change.remove
-          .filter((preference) => !String(preference.id).startsWith('optimistic-'))
-          .map((preference) => base44.entities.UserPreference.delete(preference.id)),
-      );
-      if (change.adding) {
-        await base44.entities.UserPreference.create(change.payload);
-      }
-    },
+    mutationFn: persistPreferenceChange,
     onMutate: async (change) => {
       await queryClient.cancelQueries({ queryKey: preferenceKey });
       const previous = queryClient.getQueryData(preferenceKey) || [];
