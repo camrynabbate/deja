@@ -7,32 +7,10 @@ import { GoogleAuth } from 'google-auth-library';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const keyPath = join(__dirname, 'firebase-admin-key.json');
+const rulesPath = join(__dirname, '..', 'firestore.rules');
 const sa = JSON.parse(readFileSync(keyPath, 'utf8'));
 const PROJECT = sa.project_id;
-
-const RULES = `rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Saves, likes, styleboards — owner only
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    // Product catalog — any signed-in user can read; writes go through the
-    // admin SDK (import-shopify.mjs), so deny client writes.
-    match /clothing_items/{itemId} {
-      allow read: if request.auth != null;
-      allow write: if false;
-    }
-    // Shared dupe searches — signed-in users can read/create; only the
-    // creator can edit or delete their own.
-    match /dupe_searches/{searchId} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if request.auth != null
-        && request.auth.uid == resource.data.created_by;
-    }
-  }
-}
-`;
+const RULES = readFileSync(rulesPath, 'utf8');
 
 const auth = new GoogleAuth({
   credentials: sa,

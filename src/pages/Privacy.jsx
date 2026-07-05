@@ -18,13 +18,14 @@ export default function Privacy() {
 
       <main className="max-w-3xl mx-auto px-6 py-16 space-y-10">
         <h1 className="font-serif text-4xl font-semibold text-foreground">Privacy Policy</h1>
-        <p className="text-xs text-muted-foreground">Last updated: April 19, 2026</p>
+        <p className="text-xs text-muted-foreground">Last updated: July 5, 2026</p>
 
         <section className="space-y-3">
           <h2 className="font-medium text-foreground text-lg">Information We Collect</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
             When you create an account, we collect your email address and password (stored securely via Firebase Authentication).
-            We also collect usage data such as items you like, save, and browse to personalize your experience.
+            We also store items you like or save, styleboards you create, and basic product interactions used to personalize your experience.
+            If you use photo search, the selected image is sent securely to our image-analysis provider to identify the item.
           </p>
         </section>
 
@@ -44,17 +45,19 @@ export default function Privacy() {
             We use the following third-party services:
           </p>
           <ul className="space-y-2 text-sm text-muted-foreground leading-relaxed list-disc list-inside">
-            <li><strong className="text-foreground">Firebase</strong> — Authentication and hosting infrastructure</li>
-            <li><strong className="text-foreground">Google Analytics</strong> — Anonymous usage analytics to improve our service</li>
-            <li><strong className="text-foreground">Affiliate Networks</strong> — Product links may direct you to retailer websites; these partners may use cookies to track purchases for commission purposes</li>
+            <li><strong className="text-foreground">Firebase</strong> — Authentication and private app data storage</li>
+            <li><strong className="text-foreground">Algolia</strong> — Product search</li>
+            <li><strong className="text-foreground">Anthropic</strong> — Photo analysis when you choose photo search</li>
+            <li><strong className="text-foreground">Sentry</strong> — App crash reports, when enabled, without email addresses or screen recordings</li>
+            <li><strong className="text-foreground">Affiliate Networks</strong> — Product links may direct you to retailer websites; tracking is enabled only after permission where required</li>
           </ul>
         </section>
 
         <section className="space-y-3">
           <h2 className="font-medium text-foreground text-lg">Cookies & Local Storage</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            We use browser local storage to save your preferences, liked items, and recently viewed products.
-            Google Analytics uses cookies for anonymous usage tracking. You can disable cookies in your browser settings.
+            Likes, saved items, and styleboards are stored securely with your account.
+            Recently viewed products are stored only on your device and are kept separate for each account.
           </p>
         </section>
 

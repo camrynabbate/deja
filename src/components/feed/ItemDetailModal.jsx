@@ -8,17 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Heart, Bookmark, ExternalLink, Layout, ChevronRight, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { shareItem, hapticLight } from '@/lib/native';
+import { getSafeExternalUrl } from '@/lib/externalUrls';
+import useIsMobile from '@/hooks/useIsMobile';
 
-function useIsMobile() {
-  return typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
-}
-
-export default function ItemDetailModal({ item, onClose, onLike, onSave, onDislike, isLiked, isSaved, allItems }) {
+export default function ItemDetailModal({ item, onClose, onLike, onSave, onDislike, isLiked, isSaved, allItems, onOpen }) {
   const [addToBoardOpen, setAddToBoardOpen] = useState(false);
   const isMobile = useIsMobile();
 
   const { user } = useAuth();
   const uid = user?.uid;
+  const shopUrl = getSafeExternalUrl(item?.source_url);
 
   const { data: boards = [] } = useQuery({
     queryKey: ['styleboards', 'mine', uid],
@@ -102,7 +101,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
             className="gap-1.5"
           >
             <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
-            {isLiked ? 'Liked' : 'Like'}
+            {isLiked ? 'Remove Like' : 'Like'}
           </Button>
           <Button
             variant={isSaved ? "default" : "outline"}
@@ -111,7 +110,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
             className="gap-1.5"
           >
             <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
-            {isSaved ? 'Saved' : 'Save'}
+            {isSaved ? 'Remove Saved' : 'Save'}
           </Button>
           <Button
             variant="outline"
@@ -122,15 +121,15 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
             <Layout className="w-4 h-4" />
             Add to Board
           </Button>
-          {item.source_url && (
-            <a href={item.source_url} target="_blank" rel="noopener noreferrer">
+          {shopUrl && (
+            <a href={shopUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="gap-1.5">
                 <ExternalLink className="w-4 h-4" />
                 Shop
               </Button>
             </a>
           )}
-          {item.source_url && (
+          {shopUrl && (
             <Button
               variant="outline"
               size="sm"
@@ -139,7 +138,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
                 shareItem({
                   title: item.title,
                   text: `${item.title}${item.brand ? ` by ${item.brand}` : ''} on déjà`,
-                  url: item.source_url,
+                  url: shopUrl,
                 });
               }}
               className="gap-1.5"
@@ -158,10 +157,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
               {similarItems.map(sim => (
                 <button
                   key={sim.id}
-                  onClick={() => {
-                    onClose();
-                    setTimeout(() => {}, 100);
-                  }}
+                  onClick={() => onOpen?.(sim)}
                   className="shrink-0 rounded-lg overflow-hidden border border-border/50 hover:border-border transition-all group"
                   style={{ width: 72, height: 96 }}
                 >

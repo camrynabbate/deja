@@ -1,28 +1,45 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { setMonitoringUser } from '@/lib/monitoring';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    let authChangeId = 0;
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      const changeId = ++authChangeId;
       if (firebaseUser) {
-        setUser({
+        let role = 'user';
+        try {
+          const token = await firebaseUser.getIdTokenResult();
+          if (token.claims.admin === true) role = 'admin';
+        } catch (error) {
+          console.error('[AuthContext] Could not load account permissions:', error);
+        }
+        if (changeId !== authChangeId) return;
+        const nextUser = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           full_name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-          role: 'user',
-        });
+          role,
+        };
+        setUser(nextUser);
+        setMonitoringUser(nextUser);
       } else {
         setUser(null);
+        setMonitoringUser(null);
       }
       setIsLoadingAuth(false);
     });
-    return unsubscribe;
+    return () => {
+      authChangeId += 1;
+      unsubscribe();
+    };
   }, []);
 
   const logout = async () => {
@@ -34,11 +51,7 @@ export const AuthProvider = ({ children }) => {
       user,
       isAuthenticated: !!user,
       isLoadingAuth,
-      isLoadingPublicSettings: false,
-      authError: null,
       logout,
-      navigateToLogin: () => {},
-      checkAppState: () => {},
     }}>
       {children}
     </AuthContext.Provider>

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, CheckCircle2, AlertCircle, Database, Plus, Trash2, ExternalLink, Image, Upload, Pencil, X, Wand2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getSafeExternalUrl } from '@/lib/externalUrls';
 
 const CATEGORIES = ['tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'bags', 'accessories'];
 
@@ -102,10 +103,10 @@ export default function Admin() {
   const updateField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
   const fetchProductDetails = async () => {
-    const url = form.source_url.trim();
+    const url = getSafeExternalUrl(form.source_url);
     if (!url) {
       setAddStatus('error');
-      setAddMessage('Paste a product URL first.');
+      setAddMessage('Paste a valid http or https product URL first.');
       return;
     }
 
@@ -175,9 +176,10 @@ export default function Admin() {
   };
 
   const handleAdd = async () => {
-    if (!form.title.trim() || !form.source_url.trim()) {
+    const sourceUrl = getSafeExternalUrl(form.source_url);
+    if (!form.title.trim() || !sourceUrl) {
       setAddStatus('error');
-      setAddMessage('Title and product URL are required.');
+      setAddMessage('A title and valid http or https product URL are required.');
       return;
     }
 
@@ -185,6 +187,7 @@ export default function Admin() {
     try {
       const payload = {
         ...form,
+        source_url: sourceUrl,
         price: form.price ? parseFloat(form.price) : 0,
       };
       if (editingId) {
@@ -230,7 +233,8 @@ export default function Admin() {
     setAddStatus(null);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, title) => {
+    if (!window.confirm(`Delete "${title || 'this product'}"? This cannot be undone.`)) return;
     await base44.entities.ClothingItem.delete(id);
     queryClient.invalidateQueries({ queryKey: ['clothingItems'] });
   };
@@ -259,7 +263,12 @@ export default function Admin() {
         continue;
       }
 
-      const [title, brand, priceStr, sourceUrl, imageUrl] = parts;
+      const [title, brand, priceStr, rawSourceUrl, imageUrl] = parts;
+      const sourceUrl = getSafeExternalUrl(rawSourceUrl);
+      if (!sourceUrl) {
+        errors++;
+        continue;
+      }
       const price = parseFloat(priceStr) || 0;
       let priceTier = 'mid_range';
       if (price < 30) priceTier = 'budget';
@@ -273,7 +282,7 @@ export default function Admin() {
           brand: brand || '',
           price,
           price_tier: priceTier,
-          source_url: sourceUrl || '',
+          source_url: sourceUrl,
           image_url: imageUrl || '',
           category: inferCategory(title),
           color: '',
@@ -619,8 +628,8 @@ export default function Admin() {
                     {item.brand}{item.price ? ` · $${item.price}` : ''}{item.category ? ` · ${item.category}` : ''}
                   </p>
                 </div>
-                {item.source_url && (
-                  <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="shrink-0 p-2 text-muted-foreground hover:text-foreground">
+                {getSafeExternalUrl(item.source_url) && (
+                  <a href={getSafeExternalUrl(item.source_url)} target="_blank" rel="noopener noreferrer" className="shrink-0 p-2 text-muted-foreground hover:text-foreground">
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 )}
@@ -635,7 +644,7 @@ export default function Admin() {
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleDelete(item.id)} className="shrink-0 p-2 text-muted-foreground hover:text-destructive transition-colors">
+                <button onClick={() => handleDelete(item.id, item.title)} className="shrink-0 p-2 text-muted-foreground hover:text-destructive transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

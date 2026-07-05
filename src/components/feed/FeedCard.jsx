@@ -1,31 +1,33 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Heart, Bookmark, X, ExternalLink, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { BottomSheet, BottomSheetItem } from '@/components/ui/BottomSheet';
+import { getSafeExternalUrl, openExternalUrl } from '@/lib/externalUrls';
 
 export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLiked, isSaved }) {
   const [showHeart, setShowHeart] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const tapTimer = useRef(null);
-  const tapCount = useRef(0);
+  const lastTapTime = useRef(0);
+  const heartTimer = useRef(null);
+  const shopUrl = getSafeExternalUrl(item.source_url);
 
-  // Single tap → open detail, double tap → like
+  useEffect(() => () => {
+    clearTimeout(heartTimer.current);
+  }, []);
+
   const handleTap = () => {
-    tapCount.current += 1;
-    if (tapCount.current === 1) {
-      tapTimer.current = setTimeout(() => {
-        tapCount.current = 0;
-        onOpen?.(item);
-      }, 280);
-    } else if (tapCount.current === 2) {
-      clearTimeout(tapTimer.current);
-      tapCount.current = 0;
+    const now = Date.now();
+    if (now - lastTapTime.current < 300) {
       if (!isLiked) onLike(item);
       setShowHeart(true);
-      setTimeout(() => setShowHeart(false), 800);
+      clearTimeout(heartTimer.current);
+      heartTimer.current = setTimeout(() => setShowHeart(false), 800);
+    } else {
+      onOpen?.(item);
     }
+    lastTapTime.current = now;
   };
 
   const priceTierLabel = {
@@ -37,7 +39,6 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -48,7 +49,6 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
         role="img"
         aria-label={`${item.title}${item.brand ? ` by ${item.brand}` : ''} — double-tap to like`}
         className="relative aspect-[3/4] overflow-hidden cursor-pointer bg-secondary"
-        onDoubleClick={handleTap}
         onClick={handleTap}
       >
         {item.image_url ? (
@@ -93,9 +93,9 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
             >
               <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
             </button>
-            {item.source_url && (
+            {shopUrl && (
               <a
-                href={item.source_url}
+                href={shopUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`Shop ${item.title}`}
@@ -151,8 +151,8 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
             <h3 className="text-sm font-medium text-foreground mt-1 truncate">{item.title}</h3>
           </div>
           <button
-            aria-label={isLiked ? "Liked" : "Like item"}
-            onClick={() => isLiked ? null : onLike(item)}
+            aria-label={isLiked ? "Remove like" : "Like item"}
+            onClick={() => onLike(item)}
             className="shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2"
           >
             <Heart className={cn(
@@ -185,14 +185,12 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
           <Bookmark className={cn("w-4 h-4", isSaved && "fill-current text-accent")} />
           {isSaved ? 'Remove from Saved' : 'Save Item'}
         </BottomSheetItem>
-        {!isLiked && (
-          <BottomSheetItem onSelect={() => { onLike(item); setSheetOpen(false); }}>
-            <Heart className="w-4 h-4" />
-            Like Item
-          </BottomSheetItem>
-        )}
-        {item.source_url && (
-          <BottomSheetItem onSelect={() => { window.open(item.source_url, '_blank'); setSheetOpen(false); }}>
+        <BottomSheetItem onSelect={() => { onLike(item); setSheetOpen(false); }}>
+          <Heart className={cn("w-4 h-4", isLiked && "fill-current text-accent")} />
+          {isLiked ? 'Remove Like' : 'Like Item'}
+        </BottomSheetItem>
+        {shopUrl && (
+          <BottomSheetItem onSelect={() => { openExternalUrl(shopUrl); setSheetOpen(false); }}>
             <ExternalLink className="w-4 h-4" />
             Shop Item
           </BottomSheetItem>

@@ -2,6 +2,17 @@ import { Capacitor } from '@capacitor/core';
 import { getAuth } from 'firebase/auth';
 
 const VISUAL_SEARCH_URL = import.meta.env.VITE_VISUAL_SEARCH_URL;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
+function validateImage({ base64, mimeType }) {
+  if (!ALLOWED_IMAGE_TYPES.has(mimeType?.toLowerCase())) {
+    throw new Error('Use a JPEG, PNG, WebP, or GIF image.');
+  }
+  const approximateBytes = Math.floor((base64?.length || 0) * 0.75);
+  if (!base64) throw new Error('The selected image could not be read.');
+  if (approximateBytes > MAX_IMAGE_BYTES) throw new Error('Choose an image smaller than 5 MB.');
+}
 
 export async function pickImage() {
   if (Capacitor.isNativePlatform()) {
@@ -29,6 +40,14 @@ export async function pickImage() {
         reject(new Error('No file selected'));
         return;
       }
+      if (!ALLOWED_IMAGE_TYPES.has(file.type.toLowerCase())) {
+        reject(new Error('Use a JPEG, PNG, WebP, or GIF image.'));
+        return;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        reject(new Error('Choose an image smaller than 5 MB.'));
+        return;
+      }
       const reader = new FileReader();
       reader.onload = () => {
         const result = String(reader.result || '');
@@ -43,6 +62,7 @@ export async function pickImage() {
 }
 
 export async function describeImage({ base64, mimeType }) {
+  validateImage({ base64, mimeType });
   if (!VISUAL_SEARCH_URL) throw new Error('Visual search URL not configured');
   const user = getAuth().currentUser;
   if (!user) throw new Error('Sign in to use visual search');

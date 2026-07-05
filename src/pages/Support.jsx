@@ -71,7 +71,7 @@ export default function Support() {
             <div className="space-y-2">
               <p className="font-medium text-foreground">How do I delete my account?</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Open the Profile tab, scroll to the bottom, and tap "Delete Account." This permanently removes your account, preferences, saved items, styleboards, and search history. If you only want to clear data without deleting the account, use "Clear All Data" instead.
+                Open the Profile tab, scroll to the bottom, and tap "Delete Account." This permanently removes your account, preferences, saved items, and styleboards. If you only want to clear data without deleting the account, use "Clear All Data" instead.
               </p>
             </div>
 

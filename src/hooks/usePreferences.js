@@ -3,6 +3,22 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hapticLight, hapticMedium } from '@/lib/native';
 import { useAuth } from '@/lib/AuthContext';
+import {
+  applyOptimisticPreferenceChange,
+  preferenceChange,
+} from '@/lib/preferenceState';
+
+/** @param {ReturnType<typeof preferenceChange>} change */
+async function persistPreferenceChange(change) {
+  await Promise.all(
+    change.remove
+      .filter((preference) => !String(preference.id).startsWith('optimistic-'))
+      .map((preference) => base44.entities.UserPreference.delete(preference.id)),
+  );
+  if (change.adding) {
+    await base44.entities.UserPreference.create(change.payload);
+  }
+}
 
 export default function usePreferences() {
   const queryClient = useQueryClient();
@@ -23,24 +39,29 @@ export default function usePreferences() {
     if (prefsError) console.error('[usePreferences] load failed:', prefsError);
   }, [prefsError]);
 
-  const createPref = useMutation({
-    mutationFn: (data) => base44.entities.UserPreference.create(data),
-    // Optimistic update: immediately add the preference to the cache
-    onMutate: async (newPref) => {
-      await queryClient.cancelQueries({ queryKey: ['userPreferences'] });
-      const previous = queryClient.getQueryData(['userPreferences']);
-      queryClient.setQueryData(['userPreferences'], (old = []) => [
-        { ...newPref, id: `optimistic-${Date.now()}`, created_date: new Date().toISOString() },
-        ...old,
-      ]);
+  const preferenceKey = useMemo(() => ['userPreferences', uid], [uid]);
+
+  const updatePreference = useMutation({
+    mutationFn: persistPreferenceChange,
+    onMutate: async (change) => {
+      await queryClient.cancelQueries({ queryKey: preferenceKey });
+      const previous = queryClient.getQueryData(preferenceKey) || [];
+      queryClient.setQueryData(
+        preferenceKey,
+        applyOptimisticPreferenceChange(
+          previous,
+          change,
+          `optimistic-${Date.now()}`,
+        ),
+      );
       return { previous };
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
+      queryClient.invalidateQueries({ queryKey: preferenceKey });
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(['userPreferences'], context.previous);
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(preferenceKey, context.previous);
       }
     },
   });
@@ -84,23 +105,12 @@ export default function usePreferences() {
   }, [tasteProfile]);
 
   const recordPreference = useCallback((item, action) => {
-    const existingSet = action === 'like' ? likedIds : action === 'save' ? savedIds : dislikedIds;
-    if (existingSet.has(item.id)) return;
-    if (action === 'dislike') hapticMedium(); else hapticLight();
-    createPref.mutate({
-      item_id: item.id,
-      action,
-      style_tags: item.style_tags || [],
-      category: item.category || '',
-      price_tier: item.price_tier || '',
-      title: item.title || '',
-      brand: item.brand || '',
-      image_url: item.image_url || '',
-      price: item.price ?? null,
-      color: item.color || '',
-      source_url: item.source_url || '',
-    });
-  }, [createPref, likedIds, savedIds, dislikedIds]);
+    const change = preferenceChange(preferences, item, action);
+    if (change.adding) {
+      if (action === 'dislike') hapticMedium(); else hapticLight();
+    }
+    updatePreference.mutate(change);
+  }, [preferences, updatePreference]);
 
   return { preferences, likedIds, dislikedIds, savedIds, tasteProfile, scoreItem, recordPreference };
 }

@@ -3,6 +3,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+let scrollLockCount = 0;
+let lockedElement = null;
+let previousOverflow = '';
+
+function lockAppScroll() {
+  /** @type {HTMLElement | null} */
+  const appScrollContainer = document.querySelector('[data-app-scroll-container]');
+  const element = appScrollContainer || document.body;
+  if (scrollLockCount === 0) {
+    lockedElement = element;
+    previousOverflow = element.style.overflow;
+    element.style.overflow = 'hidden';
+  }
+  scrollLockCount += 1;
+}
+
+function unlockAppScroll() {
+  scrollLockCount = Math.max(0, scrollLockCount - 1);
+  if (scrollLockCount === 0 && lockedElement) {
+    lockedElement.style.overflow = previousOverflow;
+    lockedElement = null;
+    previousOverflow = '';
+  }
+}
+
 /**
  * Mobile-first bottom sheet. On desktop it renders as a standard popover/dropdown replacement.
  * Usage:
@@ -11,14 +36,11 @@ import { cn } from '@/lib/utils';
  *   </BottomSheet>
  */
 export function BottomSheet({ open, onClose, title, children, className }) {
-  // Lock body scroll when open on mobile
+  // AppLayout scrolls its <main>, not the document body.
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
+    if (!open) return undefined;
+    lockAppScroll();
+    return unlockAppScroll;
   }, [open]);
 
   // Close on Escape

@@ -29,13 +29,13 @@ If you change what data the app collects, update this doc and the questionnaire 
 - **Collected for:** App Functionality
 - **Linked to user:** Yes
 - **Used for tracking:** No
-- *Saved items, styleboards, taste preferences, dupe-search history.*
+- *Saved items, styleboards, and taste preferences.*
 
 ### Search History
 - **Collected for:** App Functionality, Product Personalization
 - **Linked to user:** Yes
 - **Used for tracking:** No
-- *Algolia search queries + DupeSearch records, used to personalize the feed.*
+- *Algolia product-search requests, used to return relevant catalog results.*
 
 ### Identifiers → User ID
 - **Collected for:** App Functionality, Analytics
@@ -80,7 +80,7 @@ If you change what data the app collects, update this doc and the questionnaire 
 | Service | What they get | Why |
 |---|---|---|
 | Firebase Auth | Email, name, hashed password | Sign-in |
-| Firebase Firestore | All user content (preferences, styleboards, dupes, searches) | App data store |
+| Firebase Firestore | User preferences and styleboards | App data store |
 | Firebase Analytics | IDFV, session/usage events | App analytics |
 | Algolia | Search queries, click events, anonymous user token | Product search |
 | Skimlinks | Outbound URL clicks | Affiliate attribution (third-party ad / tracking) |
