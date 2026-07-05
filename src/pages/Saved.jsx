@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import FeedGrid from '@/components/feed/FeedGrid';
 import usePreferences from '@/hooks/usePreferences';
 import { Bookmark, Heart } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import ItemDetailModal from '@/components/feed/ItemDetailModal';
 
 function prefToItem(p) {
   return {
@@ -20,8 +21,18 @@ function prefToItem(p) {
   };
 }
 
+function EmptyState({ icon: Icon, text }) {
+  return (
+    <div className="text-center py-20">
+      <Icon className="w-10 h-10 text-muted-foreground/30 mx-auto mb-4" />
+      <p className="font-serif text-lg text-muted-foreground italic">{text}</p>
+    </div>
+  );
+}
+
 export default function Saved() {
   const { preferences, likedIds, savedIds, recordPreference } = usePreferences();
+  const [selectedItem, setSelectedItem] = useState(null);
   const isLoading = false;
 
   const savedItems = useMemo(
@@ -33,12 +44,11 @@ export default function Saved() {
     [preferences],
   );
 
-  const EmptyState = ({ icon: Icon, text }) => (
-    <div className="text-center py-20">
-      <Icon className="w-10 h-10 text-muted-foreground/30 mx-auto mb-4" />
-      <p className="font-serif text-lg text-muted-foreground italic">{text}</p>
-    </div>
-  );
+  const collectionItems = useMemo(() => {
+    const itemsById = new Map();
+    [...savedItems, ...likedItems].forEach((item) => itemsById.set(item.id, item));
+    return [...itemsById.values()];
+  }, [likedItems, savedItems]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -80,6 +90,7 @@ export default function Saved() {
               onLike={(item) => recordPreference(item, 'like')}
               onDislike={(item) => recordPreference(item, 'dislike')}
               onSave={(item) => recordPreference(item, 'save')}
+              onOpen={setSelectedItem}
             />
           )}
         </TabsContent>
@@ -103,10 +114,25 @@ export default function Saved() {
               onLike={(item) => recordPreference(item, 'like')}
               onDislike={(item) => recordPreference(item, 'dislike')}
               onSave={(item) => recordPreference(item, 'save')}
+              onOpen={setSelectedItem}
             />
           )}
         </TabsContent>
       </Tabs>
+
+      <ItemDetailModal
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+        onLike={(item) => recordPreference(item, 'like')}
+        onSave={(item) => recordPreference(item, 'save')}
+        onDislike={(item) => {
+          recordPreference(item, 'dislike');
+          setSelectedItem(null);
+        }}
+        isLiked={selectedItem ? likedIds.has(selectedItem.id) : false}
+        isSaved={selectedItem ? savedIds.has(selectedItem.id) : false}
+        allItems={collectionItems}
+      />
     </div>
   );
 }

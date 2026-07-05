@@ -156,8 +156,8 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
             <h3 className="text-sm font-medium text-foreground mt-1 truncate">{item.title}</h3>
           </div>
           <button
-            aria-label={isLiked ? "Liked" : "Like item"}
-            onClick={() => isLiked ? null : onLike(item)}
+            aria-label={isLiked ? "Remove like" : "Like item"}
+            onClick={() => onLike(item)}
             className="shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2"
           >
             <Heart className={cn(
@@ -190,12 +190,10 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
           <Bookmark className={cn("w-4 h-4", isSaved && "fill-current text-accent")} />
           {isSaved ? 'Remove from Saved' : 'Save Item'}
         </BottomSheetItem>
-        {!isLiked && (
-          <BottomSheetItem onSelect={() => { onLike(item); setSheetOpen(false); }}>
-            <Heart className="w-4 h-4" />
-            Like Item
-          </BottomSheetItem>
-        )}
+        <BottomSheetItem onSelect={() => { onLike(item); setSheetOpen(false); }}>
+          <Heart className={cn("w-4 h-4", isLiked && "fill-current text-accent")} />
+          {isLiked ? 'Remove Like' : 'Like Item'}
+        </BottomSheetItem>
         {item.source_url && (
           <BottomSheetItem onSelect={() => { window.open(item.source_url, '_blank'); setSheetOpen(false); }}>
             <ExternalLink className="w-4 h-4" />

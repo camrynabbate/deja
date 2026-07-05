@@ -102,7 +102,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
             className="gap-1.5"
           >
             <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
-            {isLiked ? 'Liked' : 'Like'}
+            {isLiked ? 'Remove Like' : 'Like'}
           </Button>
           <Button
             variant={isSaved ? "default" : "outline"}
@@ -111,7 +111,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
             className="gap-1.5"
           >
             <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
-            {isSaved ? 'Saved' : 'Save'}
+            {isSaved ? 'Remove Saved' : 'Save'}
           </Button>
           <Button
             variant="outline"
