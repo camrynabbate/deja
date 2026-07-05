@@ -9,6 +9,7 @@ import AppLayout from '@/components/layout/AppLayout.jsx';
 import Login from '@/pages/Login';
 import Feed from '@/pages/Feed';
 import { initTracking } from '@/lib/tracking';
+import { captureException } from '@/lib/monitoring';
 
 const FindDupes = lazy(() => import('@/pages/FindDupes'));
 const Saved = lazy(() => import('@/pages/Saved'));
@@ -40,13 +41,19 @@ class ErrorBoundary extends React.Component {
   static getDerivedStateFromError(error) {
     return { error };
   }
+  componentDidCatch(error, errorInfo) {
+    captureException(error, {
+      componentStack: errorInfo.componentStack,
+      route: window.location.pathname,
+    });
+  }
   render() {
     if (this.state.error) {
       return (
         <div className="p-8 text-center">
           <p className="text-destructive font-medium">Something went wrong</p>
           <pre className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap">{this.state.error.message}</pre>
-          <button onClick={() => this.setState({ error: null })} className="mt-4 text-sm underline">Try again</button>
+          <button onClick={() => window.location.reload()} className="mt-4 text-sm underline">Reload app</button>
         </div>
       );
     }

@@ -12,6 +12,7 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'og-image.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globIgnores: ['**/sentryClient-*.js'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
       },
