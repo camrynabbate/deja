@@ -1,24 +1,13 @@
-import { useState, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { cn } from '@/lib/utils';
+import useIsMobile from '@/hooks/useIsMobile';
 
 const BACKGROUNDS = [
   '#FAF9F7', '#F5F0E8', '#FAFAFA', '#F0EDE8',
   '#E8EFF5', '#F0EDE8', '#1A1A1A', '#2C2C2C',
   '#D4C5B0', '#C9D4CA', '#D4C5C5', '#C5C5D4',
 ];
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches);
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const handler = (e) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-  return isMobile;
-}
 
 const ColorSwatch = ({ color, selected, onClick }) => (
   <button

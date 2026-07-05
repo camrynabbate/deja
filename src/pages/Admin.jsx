@@ -233,7 +233,8 @@ export default function Admin() {
     setAddStatus(null);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, title) => {
+    if (!window.confirm(`Delete "${title || 'this product'}"? This cannot be undone.`)) return;
     await base44.entities.ClothingItem.delete(id);
     queryClient.invalidateQueries({ queryKey: ['clothingItems'] });
   };
@@ -262,7 +263,12 @@ export default function Admin() {
         continue;
       }
 
-      const [title, brand, priceStr, sourceUrl, imageUrl] = parts;
+      const [title, brand, priceStr, rawSourceUrl, imageUrl] = parts;
+      const sourceUrl = getSafeExternalUrl(rawSourceUrl);
+      if (!sourceUrl) {
+        errors++;
+        continue;
+      }
       const price = parseFloat(priceStr) || 0;
       let priceTier = 'mid_range';
       if (price < 30) priceTier = 'budget';
@@ -276,7 +282,7 @@ export default function Admin() {
           brand: brand || '',
           price,
           price_tier: priceTier,
-          source_url: sourceUrl || '',
+          source_url: sourceUrl,
           image_url: imageUrl || '',
           category: inferCategory(title),
           color: '',
@@ -638,7 +644,7 @@ export default function Admin() {
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleDelete(item.id)} className="shrink-0 p-2 text-muted-foreground hover:text-destructive transition-colors">
+                <button onClick={() => handleDelete(item.id, item.title)} className="shrink-0 p-2 text-muted-foreground hover:text-destructive transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

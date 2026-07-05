@@ -9,12 +9,9 @@ import { Heart, Bookmark, ExternalLink, Layout, ChevronRight, Share2 } from 'luc
 import { cn } from '@/lib/utils';
 import { shareItem, hapticLight } from '@/lib/native';
 import { getSafeExternalUrl } from '@/lib/externalUrls';
+import useIsMobile from '@/hooks/useIsMobile';
 
-function useIsMobile() {
-  return typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
-}
-
-export default function ItemDetailModal({ item, onClose, onLike, onSave, onDislike, isLiked, isSaved, allItems }) {
+export default function ItemDetailModal({ item, onClose, onLike, onSave, onDislike, isLiked, isSaved, allItems, onOpen }) {
   const [addToBoardOpen, setAddToBoardOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -160,10 +157,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
               {similarItems.map(sim => (
                 <button
                   key={sim.id}
-                  onClick={() => {
-                    onClose();
-                    setTimeout(() => {}, 100);
-                  }}
+                  onClick={() => onOpen?.(sim)}
                   className="shrink-0 rounded-lg overflow-hidden border border-border/50 hover:border-border transition-all group"
                   style={{ width: 72, height: 96 }}
                 >

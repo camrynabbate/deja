@@ -132,6 +132,7 @@ export default function Saved() {
         isLiked={selectedItem ? likedIds.has(selectedItem.id) : false}
         isSaved={selectedItem ? savedIds.has(selectedItem.id) : false}
         allItems={collectionItems}
+        onOpen={setSelectedItem}
       />
     </div>
   );

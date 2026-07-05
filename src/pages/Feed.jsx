@@ -38,7 +38,7 @@ export default function Feed() {
     hasNextPage,
   } = useInfiniteQuery({
     queryKey: ['feedItems', genderPref],
-    queryFn: () => fetchFeedItems({ hitsPerPage: 30, gender: genderPref }),
+    queryFn: ({ pageParam = 0 }) => fetchFeedItems({ hitsPerPage: 30, gender: genderPref, page: pageParam }),
     getNextPageParam: getNextFeedPageParam,
     initialPageParam: 0,
     staleTime: 5 * 60 * 1000,
@@ -224,6 +224,7 @@ export default function Feed() {
         isLiked={selectedItem ? likedIds.has(selectedItem.id) : false}
         isSaved={selectedItem ? savedIds.has(selectedItem.id) : false}
         allItems={items}
+        onOpen={handleOpenItem}
       />
     </div>
   );

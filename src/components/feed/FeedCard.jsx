@@ -9,32 +9,25 @@ import { getSafeExternalUrl, openExternalUrl } from '@/lib/externalUrls';
 export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLiked, isSaved }) {
   const [showHeart, setShowHeart] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const tapTimer = useRef(null);
+  const lastTapTime = useRef(0);
   const heartTimer = useRef(null);
-  const tapCount = useRef(0);
   const shopUrl = getSafeExternalUrl(item.source_url);
 
   useEffect(() => () => {
-    clearTimeout(tapTimer.current);
     clearTimeout(heartTimer.current);
   }, []);
 
-  // Single tap → open detail, double tap → like
   const handleTap = () => {
-    tapCount.current += 1;
-    if (tapCount.current === 1) {
-      tapTimer.current = setTimeout(() => {
-        tapCount.current = 0;
-        onOpen?.(item);
-      }, 280);
-    } else if (tapCount.current === 2) {
-      clearTimeout(tapTimer.current);
-      tapCount.current = 0;
+    const now = Date.now();
+    if (now - lastTapTime.current < 300) {
       if (!isLiked) onLike(item);
       setShowHeart(true);
       clearTimeout(heartTimer.current);
       heartTimer.current = setTimeout(() => setShowHeart(false), 800);
+    } else {
+      onOpen?.(item);
     }
+    lastTapTime.current = now;
   };
 
   const priceTierLabel = {

@@ -43,3 +43,9 @@ ios/**/xcuserdata/
 ios/**/*.xcuserstate
 ios/App/App/public/
 .vercel
+
+# Fastlane
+fastlane/report.xml
+fastlane/test_output/
+fastlane/screenshots/
+fastlane/README.md

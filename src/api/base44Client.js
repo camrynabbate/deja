@@ -154,30 +154,4 @@ export const base44 = {
     Styleboard: createUserStore('styleboards'),
     UserPreference: createUserStore('user_preferences'),
   },
-  auth: {
-    async me() {
-      const u = auth.currentUser;
-      return u ? { email: u.email, full_name: u.displayName || '', role: 'user' } : null;
-    },
-    logout(redirectUrl) {
-      if (redirectUrl) window.location.href = redirectUrl;
-    },
-    redirectToLogin() {},
-  },
-  integrations: {
-    Core: {
-      async UploadFile({ file }) {
-        const url = URL.createObjectURL(file);
-        return { file_url: url };
-      },
-      async InvokeLLM() {
-        throw new Error('LLM integration not configured.');
-      },
-    },
-  },
-  functions: {
-    async invoke(name) {
-      throw new Error(`Serverless function "${name}" is not available.`);
-    },
-  },
 };

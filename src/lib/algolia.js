@@ -95,7 +95,7 @@ function genderFilter(gender) {
   return 'gender:womens OR gender:unisex OR gender:mens OR gender:unknown';
 }
 
-async function fetchAcrossBrands({ hitsPerPage, gender, brandsToSample = 12 }) {
+async function fetchAcrossBrands({ hitsPerPage, gender, brandsToSample = 12, pageOffset = 0 }) {
   const sampled = shuffle(ALL_BRANDS).slice(0, brandsToSample);
   const perBrand = Math.ceil((hitsPerPage * 1.5) / brandsToSample);
 
@@ -104,7 +104,7 @@ async function fetchAcrossBrands({ hitsPerPage, gender, brandsToSample = 12 }) {
     query: '',
     filters: `brand:"${brand.replace(/"/g, '\\"')}" AND (${genderFilter(gender)})`,
     hitsPerPage: perBrand,
-    page: Math.floor(Math.random() * 30),
+    page: pageOffset,
   }));
 
   const { results } = await algoliaClient.search({ requests });
@@ -131,11 +131,10 @@ function capPerBrand(hits, maxPerBrand) {
   });
 }
 
-export async function fetchFeedItems({ hitsPerPage = 100, gender = 'womens' } = {}) {
+export async function fetchFeedItems({ hitsPerPage = 100, gender = 'womens', page = 0 } = {}) {
   if (!algoliaClient) throw new Error('Algolia not configured');
 
-  // Fetch a few products from each of ~12 random brands so the page is naturally diverse.
-  const combined = await fetchAcrossBrands({ hitsPerPage, gender, brandsToSample: 12 });
+  const combined = await fetchAcrossBrands({ hitsPerPage, gender, brandsToSample: 12, pageOffset: page });
 
   // Cap each brand at ~hitsPerPage / brandsToSample so no brand can dominate even after dedup drops some.
   const maxPerBrand = Math.max(6, Math.ceil(hitsPerPage / 10));
