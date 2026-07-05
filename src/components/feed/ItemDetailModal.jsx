@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Heart, Bookmark, ExternalLink, Layout, ChevronRight, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { shareItem, hapticLight } from '@/lib/native';
+import { getSafeExternalUrl } from '@/lib/externalUrls';
 
 function useIsMobile() {
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
@@ -19,6 +20,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
 
   const { user } = useAuth();
   const uid = user?.uid;
+  const shopUrl = getSafeExternalUrl(item?.source_url);
 
   const { data: boards = [] } = useQuery({
     queryKey: ['styleboards', 'mine', uid],
@@ -122,15 +124,15 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
             <Layout className="w-4 h-4" />
             Add to Board
           </Button>
-          {item.source_url && (
-            <a href={item.source_url} target="_blank" rel="noopener noreferrer">
+          {shopUrl && (
+            <a href={shopUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="gap-1.5">
                 <ExternalLink className="w-4 h-4" />
                 Shop
               </Button>
             </a>
           )}
-          {item.source_url && (
+          {shopUrl && (
             <Button
               variant="outline"
               size="sm"
@@ -139,7 +141,7 @@ export default function ItemDetailModal({ item, onClose, onLike, onSave, onDisli
                 shareItem({
                   title: item.title,
                   text: `${item.title}${item.brand ? ` by ${item.brand}` : ''} on déjà`,
-                  url: item.source_url,
+                  url: shopUrl,
                 });
               }}
               className="gap-1.5"

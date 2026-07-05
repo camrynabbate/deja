@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { BottomSheet, BottomSheetItem } from '@/components/ui/BottomSheet';
+import { getSafeExternalUrl, openExternalUrl } from '@/lib/externalUrls';
 
 export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLiked, isSaved }) {
   const [showHeart, setShowHeart] = useState(false);
@@ -11,6 +12,7 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
   const tapTimer = useRef(null);
   const heartTimer = useRef(null);
   const tapCount = useRef(0);
+  const shopUrl = getSafeExternalUrl(item.source_url);
 
   useEffect(() => () => {
     clearTimeout(tapTimer.current);
@@ -98,9 +100,9 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
             >
               <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
             </button>
-            {item.source_url && (
+            {shopUrl && (
               <a
-                href={item.source_url}
+                href={shopUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`Shop ${item.title}`}
@@ -194,8 +196,8 @@ export default function FeedCard({ item, onLike, onDislike, onSave, onOpen, isLi
           <Heart className={cn("w-4 h-4", isLiked && "fill-current text-accent")} />
           {isLiked ? 'Remove Like' : 'Like Item'}
         </BottomSheetItem>
-        {item.source_url && (
-          <BottomSheetItem onSelect={() => { window.open(item.source_url, '_blank'); setSheetOpen(false); }}>
+        {shopUrl && (
+          <BottomSheetItem onSelect={() => { openExternalUrl(shopUrl); setSheetOpen(false); }}>
             <ExternalLink className="w-4 h-4" />
             Shop Item
           </BottomSheetItem>

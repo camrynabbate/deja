@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Search, Loader2, Sparkles, ExternalLink, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { getSafeExternalUrl } from '@/lib/externalUrls';
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Recommended' },
@@ -41,7 +42,9 @@ export default function FindDupes() {
     try {
       const parsed = await parseFashionQuery(query);
       const hits = await searchClothingStructured(parsed, { hitsPerPage: 20 });
-      const filtered = hits.filter((h) => h.source_url && h.image_url);
+      const filtered = hits
+        .map((hit) => ({ ...hit, source_url: getSafeExternalUrl(hit.source_url) }))
+        .filter((hit) => hit.source_url && hit.image_url);
       setResults(filtered.map((h) => ({ ...h, id: h.objectID })));
     } catch (err) {
       setError(err.message || 'Search failed');
